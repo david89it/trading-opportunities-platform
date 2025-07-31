@@ -1,0 +1,272 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Repository Bootstrap and Infrastructure Setup",
+        "description": "Create pnpm monorepo with FastAPI backend, React 18 frontend, and Docker orchestration",
+        "details": "Set up pnpm workspace with apps/api (FastAPI + Poetry + Python 3.11), apps/web (React 18 + TypeScript 5.8 + Vite 6), packages/shared (TypeScript). Configure Docker with multi-stage builds, docker-compose.yml for api/web/redis services. Add Ruff/Black for Python, ESLint/Prettier for TypeScript. Implement GET /health and GET /opportunities with static mock data. Use FastAPI's async patterns and dependency injection for scalable architecture.",
+        "testStrategy": "Verify docker compose up runs all services, health endpoints return 200, web dashboard loads mock data, linting passes in CI pipeline",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize pnpm Monorepo Structure",
+            "description": "Set up the basic monorepo structure with pnpm workspace configuration and package organization",
+            "dependencies": [],
+            "details": "Create root package.json with pnpm workspace configuration. Set up apps/api, apps/web, and packages/shared directories. Configure pnpm-workspace.yaml to define workspace packages. Initialize basic package.json files in each workspace with proper naming and dependency relationships.",
+            "status": "done",
+            "testStrategy": "Verify pnpm install works correctly, workspace packages are recognized, and cross-package dependencies resolve properly"
+          },
+          {
+            "id": 2,
+            "title": "Configure FastAPI Backend with Poetry",
+            "description": "Set up the FastAPI application structure with Poetry dependency management and Python 3.11",
+            "dependencies": [],
+            "details": "Initialize Poetry project in apps/api with Python 3.11. Install FastAPI, uvicorn, pydantic v2, and development dependencies. Create app structure with main.py, routers, models, and services directories. Implement basic FastAPI app with CORS middleware and dependency injection setup. Add Ruff and Black configuration for code formatting and linting.",
+            "status": "done",
+            "testStrategy": "FastAPI server starts successfully, health endpoint returns 200, Poetry dependencies install correctly, linting passes with Ruff and Black"
+          },
+          {
+            "id": 3,
+            "title": "Set up React 18 Frontend with Vite 6",
+            "description": "Configure the React frontend application with TypeScript 5.8 and Vite 6 build system",
+            "dependencies": [],
+            "details": "Initialize Vite project in apps/web with React 18 and TypeScript 5.8. Configure tsconfig.json with strict settings. Install ESLint and Prettier with React-specific rules. Set up basic component structure with routing. Configure Vite for development and production builds with proper TypeScript integration.",
+            "status": "done",
+            "testStrategy": "Vite dev server starts successfully, TypeScript compilation works, ESLint and Prettier run without errors, hot reload functions properly"
+          },
+          {
+            "id": 4,
+            "title": "Implement API Endpoints with Mock Data",
+            "description": "Create FastAPI endpoints for health check and opportunities with static mock data",
+            "dependencies": [],
+            "details": "Implement GET /health endpoint returning server status. Create GET /opportunities endpoint with static mock trading data including RVOL, ATR%, scores, and trade setups. Use FastAPI's async patterns and proper response models. Implement dependency injection for data services. Add proper error handling and HTTP status codes.",
+            "status": "done",
+            "testStrategy": "Health endpoint returns 200 with proper JSON response, opportunities endpoint returns well-formatted mock data, async patterns work correctly, error handling functions as expected"
+          },
+          {
+            "id": 5,
+            "title": "Configure Docker and Container Orchestration",
+            "description": "Set up Docker containers with multi-stage builds and docker-compose for all services",
+            "dependencies": [],
+            "details": "Create Dockerfiles for FastAPI backend and React frontend with multi-stage builds for optimization. Configure docker-compose.yml with api, web, and redis services. Set up proper networking, volume mounts, and environment variables. Configure production-ready containers with proper security and performance settings.",
+            "status": "done",
+            "testStrategy": "Docker compose up successfully starts all services, containers communicate properly, health endpoints accessible through docker network, redis service connects correctly"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Type Contracts and Synthetic Data Generation",
+        "description": "Define shared TypeScript/Pydantic schemas and generate realistic mock trading data",
+        "details": "Create TypeScript interfaces in packages/shared: Opportunity, FeatureScores, TradeSetup, SignalHistoryRow with proper financial data types. Mirror with Pydantic v2 models in apps/api using Field validation for price/volume ranges. Generate 20-50 synthetic opportunities with realistic RVOL (0.5-3.0), ATR% (1-8%), scores (0-100), entry/stop/targets with proper risk-reward ratios (1:1 to 1:5), p_target (0.2-0.8), and net_expected_r calculations. Include market hours timestamps and proper symbol formatting.",
+        "testStrategy": "Validate all mock data passes schema validation, web dashboard renders opportunities table with sub-score bars, TypeScript compilation succeeds without errors",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define TypeScript Interfaces in Shared Package",
+            "description": "Create comprehensive TypeScript interfaces for trading data structures in packages/shared",
+            "dependencies": [],
+            "details": "Define Opportunity interface with symbol, timestamps, prices (entry/stop/target), RVOL, ATR%, risk-reward ratios. Create FeatureScores interface with sub-scores (0-100 range), p_target (0.2-0.8), net_expected_r calculations. Add TradeSetup interface for position sizing and trade execution details. Define SignalHistoryRow interface for historical tracking. Include proper financial data types, optional fields, and JSDoc comments for all interfaces.\n<info added on 2025-07-30T15:55:16.435Z>\nStarting TypeScript interface enhancement work. Current interfaces (Opportunity, FeatureScores, TradeSetup, RiskMetrics) are implemented but need consistency fixes and documentation improvements. SignalHistoryRow interface requires naming convention update from camelCase to snake_case to match other interfaces. All interfaces need comprehensive JSDoc comments added with parameter descriptions, value ranges, and usage examples for better developer experience and type safety.\n</info added on 2025-07-30T15:55:16.435Z>",
+            "status": "done",
+            "testStrategy": "TypeScript compilation succeeds without errors, all interfaces export correctly, JSDoc comments are properly formatted"
+          },
+          {
+            "id": 2,
+            "title": "Create Pydantic Models with Field Validation",
+            "description": "Mirror TypeScript interfaces with Pydantic v2 models in apps/api with comprehensive field validation",
+            "dependencies": [
+              "2.1"
+            ],
+            "details": "Create Pydantic models matching TypeScript interfaces using Field validation for price/volume ranges, RVOL constraints (0.5-3.0), ATR% limits (1-8%), score ranges (0-100), p_target bounds (0.2-0.8). Add custom validators for risk-reward ratio calculations (1:1 to 1:5), proper symbol formatting (uppercase, valid characters), and market hours timestamp validation. Include model serialization methods and proper error handling.\n<info added on 2025-07-30T16:11:20.890Z>\nComprehensive field validation implementation completed successfully with all validation rules properly enforced. Field validation tests confirm proper acceptance of valid data and rejection of invalid inputs across all constraints. Critical discovery: existing mock data generator produces values outside new validation ranges, requiring immediate update to respect Pydantic constraints before proceeding with realistic data generation.\n</info added on 2025-07-30T16:11:20.890Z>",
+            "status": "done",
+            "testStrategy": "All field validations work correctly, invalid data raises appropriate ValidationError, model serialization produces expected JSON output"
+          },
+          {
+            "id": 3,
+            "title": "Generate Realistic Trading Data",
+            "description": "Create synthetic trading opportunities with realistic financial metrics and proper distributions",
+            "dependencies": [
+              "2.1",
+              "2.2"
+            ],
+            "details": "Generate 20-50 synthetic opportunities with realistic RVOL values (weighted toward 1.0-2.0), ATR% following market volatility patterns (2-6% common range), correlated entry/stop/target prices with proper risk-reward ratios. Calculate net_expected_r using p_target probabilities and R:R ratios. Include diverse symbols (large/mid/small cap), market hours timestamps in ET, and realistic volume patterns. Ensure data passes both TypeScript and Pydantic validation.",
+            "status": "done",
+            "testStrategy": "Generated data passes all schema validations, financial metrics are within realistic ranges, risk-reward calculations are mathematically correct"
+          },
+          {
+            "id": 4,
+            "title": "Implement Data Generation Utilities",
+            "description": "Build utility functions for consistent synthetic data generation and validation",
+            "dependencies": [
+              "2.2"
+            ],
+            "details": "Create data generation utilities in apps/api for creating realistic market data: symbol randomizer with proper formatting, timestamp generator for market hours (9:30 AM - 4:00 PM ET), price correlation functions for entry/stop/target relationships, RVOL distribution generator, ATR% calculator based on historical patterns. Add data validation utilities to ensure generated data meets all schema requirements and financial logic constraints.",
+            "status": "done",
+            "testStrategy": "Utility functions generate consistent data, market hours timestamps are accurate, price relationships maintain logical constraints"
+          },
+          {
+            "id": 5,
+            "title": "Integration Testing and Data Validation",
+            "description": "Validate complete data flow from generation through schema validation to API endpoints",
+            "dependencies": [
+              "2.1",
+              "2.2",
+              "2.3",
+              "2.4"
+            ],
+            "details": "Test end-to-end data flow: generate synthetic data, validate against Pydantic models, serialize to JSON, deserialize with TypeScript interfaces. Verify API endpoints serve properly formatted data, web dashboard can consume and display opportunities table with sub-score bars. Test edge cases like boundary values for RVOL, ATR%, and probability ranges. Ensure proper error handling for invalid data and graceful fallbacks.",
+            "status": "in-progress",
+            "testStrategy": "All generated data passes both backend and frontend validation, API endpoints return properly formatted JSON, web dashboard renders opportunities without errors"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Documentation and API Reference Setup",
+        "description": "Fetch and document Polygon.io API specifications and design system references",
+        "details": "Create docs/REFERENCES.md with all external API links. Document Polygon.io endpoints (Full Market Snapshot, Single Ticker, Aggregates, Ticker Overview, WebSocket) with rate limits (5/min free, unlimited premium), response schemas, and spread proxy fields for slippage calculation. Add TradingView Lightweight Charts v5 attribution requirements and integration notes. Document Visa Product Design System Nova React components and design tokens for financial UI patterns. Create sample JSON fixtures in tests/fixtures/polygon/ for offline development.",
+        "testStrategy": "All documentation files exist, sample JSON fixtures validate against documented schemas, external links are accessible and current",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Risk Management and Monte Carlo Simulation Module",
+        "description": "Implement Monte Carlo risk simulation engine with web interface",
+        "details": "Create apps/api/app/risk/monte_carlo.py with simulation function accepting p_win, R_win, risk_pct (0.5% default), trades_per_week (10), weeks (52), cost_per_trade_usd ($1), slippage_bps (10). Simulate equity paths using numpy for vectorized calculations. Add POST /risk/montecarlo endpoint with Pydantic models. Build React Risk Sandbox page with range sliders, TradingView Lightweight Charts for equity curves, histogram for final equity distribution, and max drawdown analytics. Persist parameters in localStorage. Calculate P(≥2×), P(≥3×), and P95 max drawdown metrics.",
+        "testStrategy": "Monte Carlo endpoint returns valid statistics, UI renders charts correctly, parameter persistence works, simulation results are mathematically consistent with inputs",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Polygon.io Client and Core Scanner Logic",
+        "description": "Implement market data client and algorithmic scanning with risk calculations",
+        "details": "Build apps/api/app/services/polygon_client.py with async HTTP client using httpx, exponential backoff (max 3 retries), Redis caching (5min TTL for volatile data). Implement get_full_market_snapshot(), get_single_ticker_snapshot(), get_aggregates(), get_ticker_overview() with proper error handling. Create scanner.py with compute_features() for trend alignment (20/50/200 EMA), ATR percentile, RVOL, VWAP distance/z-score, pivot proximity using point-in-time data only. Implement score_features() mapping to 0-100 subscores, position_sizing() with risk_pct validation, costs_in_R() for slippage/fees calculation, and net_expected_R() computation. Add monotone score-to-probability mapping stub for isotonic calibration.",
+        "testStrategy": "All Polygon endpoints work with fixtures and live data, scanner functions return valid scores, position sizing respects risk limits, cost calculations are accurate, no lookahead bias in features",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Market Hours Scheduling and Job Management",
+        "description": "Implement timezone-aware scheduling system for market data collection",
+        "details": "Choose APScheduler over Celery for simpler deployment in single-instance setup. Configure US/Eastern timezone handling with DST support using exchange calendar library (pandas_market_calendars). Schedule: 08:30 ET pre-market scan, every 5min during regular sessions (09:30-16:00 ET), 16:30 ET EOD analytics. Implement proper ET↔UTC conversion helpers, holiday/half-day handling. Add USE_POLYGON_LIVE environment flag with graceful degradation to fixtures. Use FastAPI BackgroundTasks for simple job execution and APScheduler for recurring tasks.",
+        "testStrategy": "Scheduler runs only during market hours, timezone conversions are accurate, holiday handling works correctly, fixture mode operates without API keys, logs show proper ET/UTC timestamps",
+        "priority": "high",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "React Dashboard and Trading Interface",
+        "description": "Build responsive trading dashboard with real-time opportunity display",
+        "details": "Create sortable opportunities table using React 18 with TypeScript, React Query v4 for data fetching/caching, and modern CSS Grid layout. Display sub-score progress bars, timestamps in ET, p(target), net expected R, and guardrail status badges. Build detailed opportunity page with TradingView Lightweight Charts v5 integration showing entry/stop/target levels, volume profile, and price action. Add Trade Setup card with R:R ratio, position sizing, and [Copy Trade Details] functionality. Implement proper error boundaries and loading states.",
+        "testStrategy": "Table sorting works correctly, React Query caches data efficiently, chart attribution is visible, detail page navigation functions, responsive design works on mobile/desktop",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "PostgreSQL Database Design and ORM Implementation",
+        "description": "Design normalized database schema for trading signals and historical data",
+        "details": "Add PostgreSQL 15 to docker-compose with proper volume mounting. Configure SQLAlchemy 2.0 with async support and Alembic for migrations. Design tables: opportunities (id, symbol, ts, scores, entry/stop/targets, position sizing, risk metrics, features JSONB), signal_history (tracking outcomes with MFE/MAE), trades (user trades with PnL tracking). Add indexes: unique(symbol, ts) on opportunities, btree on timestamps, GIN on JSONB features. Implement proper foreign key relationships and constraints. Use asyncpg driver for best performance.",
+        "testStrategy": "All migrations run successfully, indexes improve query performance, JSONB queries work efficiently, database constraints prevent invalid data, concurrent access handles properly",
+        "priority": "high",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Real-time Alert System",
+        "description": "Implement configurable alert system for trading opportunities and price movements",
+        "details": "Build alert engine with rules: new opportunity above threshold, price near entry/stop/target levels, probability threshold crossings. Use Redis Streams for fan-out to multiple subscribers with consumer groups. Implement in-app toast notifications using React Hot Toast and optional SMTP email delivery. Create alerts audit log table for compliance. Add alert management UI with threshold configuration, delivery preferences, and alert history. Implement rate limiting to prevent spam and ensure reliable delivery.",
+        "testStrategy": "Alerts fire correctly based on configured rules, Redis Streams handle multiple subscribers, email delivery works when configured, alert history is accurately logged, rate limiting prevents spam",
+        "priority": "medium",
+        "dependencies": [
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Visa Product Design System Integration",
+        "description": "Apply Visa Design System styling and components across the application",
+        "details": "Integrate Visa Nova React component library and design tokens across dashboard, detail views, and forms while preserving TradingView charts. Map VDS color tokens to financial data visualization (green/red for gains/losses, blue for neutral). Apply VDS typography scale, spacing tokens, and interaction patterns. Ensure accessibility compliance with VGAR and WCAG 2.2 Level AA standards. Document token mapping in docs/vds-refs.md for maintainability. Test with screen readers and keyboard navigation.",
+        "testStrategy": "All UI components follow VDS patterns, accessibility standards are met, color contrast ratios pass WCAG requirements, keyboard navigation works properly, no visual regressions occur",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Signal Calibration and Performance Analytics",
+        "description": "Implement nightly calibration jobs and trading performance analytics",
+        "details": "Create nightly job to label signal_history outcomes (hit_target_before_stop boolean, time_to_hit, MFE/MAE calculations). Compute reliability metrics by score decile using sklearn isotonic regression for probability calibration. Calculate Brier score for forecast accuracy and suggested mapping refinements. Build GET /calibration/summary endpoint returning decile analysis, reliability curves, and calibration diagnostics. Add calibration visualization UI with reliability plot and performance metrics. Implement version tracking for signal evolution over time.",
+        "testStrategy": "Nightly jobs run successfully, calibration metrics are mathematically correct, reliability curves show proper calibration, isotonic regression improves probability estimates, performance tracking is accurate",
+        "priority": "high",
+        "dependencies": [
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Supabase Migration and Authentication",
+        "description": "Migrate to Supabase with user authentication and row-level security",
+        "details": "Set up Supabase project and migrate PostgreSQL schema using Supabase migration tools. Implement Supabase Auth with email/OAuth (Google, GitHub) using @supabase/auth-helpers-react. Add user_id columns to trades, alerts, and user settings tables. Configure Row Level Security (RLS) policies for data isolation while keeping opportunities table publicly readable. Implement user session management with proper token refresh. Add user profile management and preferences storage. Ensure proper security headers and CORS configuration.",
+        "testStrategy": "Database migration completes successfully, user authentication works with multiple providers, RLS policies properly isolate user data, session management handles token refresh, all security requirements are met",
+        "priority": "medium",
+        "dependencies": [
+          10,
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-30T15:03:48.375Z",
+      "updated": "2025-07-30T16:15:42.352Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

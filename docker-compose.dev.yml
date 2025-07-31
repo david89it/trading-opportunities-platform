@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Redis service (same as production)
+  redis:
+    image: redis:7-alpine
+    container_name: alpha-scanner-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - alpha-scanner-dev-network
+
+  # PostgreSQL database (same as production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: alpha-scanner-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - alpha-scanner-dev-network
+
+  # FastAPI backend (development mode with hot reload)
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: base
+    container_name: alpha-scanner-api-dev
+    restart: unless-stopped
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DEBUG=true
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/app
+      - USE_POLYGON_LIVE=false
+      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
+      - RISK_PCT_PER_TRADE=0.005
+      - MAX_HEAT_PCT=0.02
+      - DAILY_STOP_R=-2.0
+      - LOSS_STREAK_HALT=8
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/app:cached
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    networks:
+      - alpha-scanner-dev-network
+
+volumes:
+  redis_data_dev:
+    driver: local
+  postgres_data_dev:
+    driver: local
+
+networks:
+  alpha-scanner-dev-network:
+    driver: bridge
+    name: alpha-scanner-dev-network

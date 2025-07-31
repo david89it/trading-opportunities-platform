@@ -1,0 +1,280 @@
+Below is a single, copy-pasteable prompt for a Cursor IDE agent.
+It starts with context/goals, then references (links), followed by a linear task plan with Definitions of Done, artifacts, and guardrails—including the changes we decided after the Monte Carlo discussion. Paste this as one message to your agent.
+
+⸻
+
+CONTEXT & GOALS (read fully before coding)
+
+Product goal
+Build an Asymmetric Alpha Scanner & Analytics Platform (no order execution) that:
+	•	Scans liquid US stocks for asymmetric risk/reward (≥3:1) opportunities.
+	•	Explains signals (price/volume/volatility sub-scores).
+	•	Estimates p(target before stop), net expected R (after costs/slippage), and position size.
+	•	Tracks signals and trade outcomes to calibrate probabilities over time.
+
+Non-goals (MVP)
+No broker integrations, no mobile app, no ML models beyond calibration mapping, no subscription/billing.
+
+Stack decisions
+	•	API: Python 3.11 + FastAPI; tasks: Celery (or APScheduler); cache: Redis; DB: start with local Postgres, later migrate to Supabase (+Auth).
+	•	Web: React 18 + TypeScript + Vite (Visa Product Design System “skin” applied after flows); data: React Query; charts: TradingView Lightweight Charts.
+	•	Data: Polygon.io (Full Market Snapshot, Single Ticker Snapshot, Aggregates/Custom Bars, Ticker Overview), optional Stocks WebSocket.
+	•	Time & scheduling: Use US/Eastern (ET) with DST and an exchange calendar (NYSE/Nasdaq). Never hardcode “EST”.
+
+Risk policy & guardrails (encode as config; used by scanner and UI)
+	•	RISK_PCT_PER_TRADE = 0.005 (0.5%)
+	•	MAX_HEAT_PCT = 0.02 (max concurrent open risk)
+	•	DAILY_STOP_R = -2.0 (halt new signals for the day after −2R)
+	•	LOSS_STREAK_HALT = 8 (pause after N consecutive losses)
+
+Promotion gates (don’t flip to “live” until all pass)
+	•	Calibration gate: Decile calibration error ≤ 10% abs (predicted vs realized p(hit)).
+	•	Expectancy gate: Out-of-sample net expected R > +0.1R/trade over ≥300 paper trades.
+	•	MC gate: With live params, Monte Carlo shows P(≥2× in 1y) > 40% and p95 Max DD < 20%.
+
+Data hygiene
+	•	Use point-in-time features; no same-bar lookahead.
+	•	Universe: either S&P 500 point-in-time or your defined liquid universe; filter by ADDV (20-day) not same-day volume.
+	•	Tag event risk (earnings, splits, dividends) for awareness.
+
+⸻
+
+REFERENCES (store locally for devs/agents)
+
+Create docs/REFERENCES.md with these links and keep copies/notes:
+
+## Polygon.io (official)
+- Full Market Snapshot (stocks): https://polygon.io/docs/rest/stocks/snapshots/full-market-snapshot
+- Single Ticker Snapshot: https://polygon.io/docs/rest/stocks/snapshots/single-ticker-snapshot
+- Aggregates (Custom Bars): https://polygon.io/docs/rest/stocks/aggregates/custom-bars
+- Ticker Overview (Reference): https://polygon.io/docs/rest/stocks/tickers/ticker-overview
+- WebSocket Quickstart: https://polygon.io/docs/websocket/quickstart
+
+## Visa Product Design System
+- VPDS Home: https://design.visa.com/
+- Getting started: https://design.visa.com/designing/
+
+## Charting
+- Lightweight Charts docs (license/attribution): https://tradingview.github.io/lightweight-charts/docs
+
+Also create:
+	•	docs/polygon-refs.md (endpoint paths, params, response schemas, and notes on fields usable as spread proxies for slippage).
+	•	docs/vds-refs.md (tokens/components you’ll use).
+	•	docs/charting-refs.md (attribution requirements, integration notes).
+
+⸻
+
+GLOBAL ARTIFACTS TO PRODUCE
+	•	Monorepo (pnpm) with apps/api, apps/web, packages/shared.
+	•	docker-compose.yml for api, web, redis, later postgres.
+	•	.env.example containing:
+
+POLYGON_API_KEY=
+USE_POLYGON_LIVE=false
+REDIS_URL=redis://redis:6379/0
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/app
+TZ=UTC
+RISK_PCT_PER_TRADE=0.005
+MAX_HEAT_PCT=0.02
+DAILY_STOP_R=-2.0
+LOSS_STREAK_HALT=8
+
+
+	•	Linting/formatting (Ruff/Black, ESLint/Prettier), pre-commit, minimal CI.
+	•	Unit tests (API + scanner + risk module) and fixtures (tests/fixtures/polygon/*.json).
+
+⸻
+
+ORDERED TASK PLAN (with DoD & artifacts)
+
+0) Repo bootstrap (Day 0)
+
+Do: Create pnpm monorepo: apps/api (FastAPI + Poetry), apps/web (React+TS+Vite), packages/shared (TS). Add Dockerfiles and docker-compose for api, web, redis.
+Implement GET /health and GET /opportunities returning static mock rows.
+
+DoD: docker compose up shows the web dashboard rendering a Top Opportunities table from static API data. Lint/tests run in CI.
+
+Artifacts: repo structure, compose, .env.example, README with run instructions.
+
+⸻
+
+1) Contracts & synthetic data (Day 0–1)
+
+Do:
+	•	In packages/shared, define TS types: Opportunity, FeatureScores, TradeSetup, SignalHistoryRow.
+	•	In apps/api, mirror with Pydantic models.
+	•	Create app/mock_data.py to generate 20–50 synthetic opportunities (plausible ranges for RVOL, ATR%, scores, entry/stop/targets, rr_ratio, p_target, net_expected_r placeholder).
+	•	Wire web dashboard to the mock endpoint.
+
+DoD: Web dashboard shows mock opportunities with sub-score bars and timestamps.
+
+Artifacts: packages/shared/src/types.ts, apps/api/app/schemas.py, apps/api/app/mock_data.py.
+
+⸻
+
+2) Fetch & pin official docs (start of Day 1)
+
+Do: Pull official docs listed above. Extract endpoint paths, params, schemas, and two sample JSON payloads per endpoint. Save:
+	•	docs/polygon-refs.md (condensed notes)
+	•	tests/fixtures/polygon/*.json (sample responses)
+	•	docs/vds-refs.md, docs/charting-refs.md
+
+DoD: All docs saved; fixtures ready; team can code offline against pinned schemas.
+
+⸻
+
+2.5) Risk & Monte Carlo module (new)
+
+Do:
+	•	Create apps/api/app/risk/monte_carlo.py with a function that simulates equity paths given: p_win, R_win, risk_pct, trades_per_week, weeks, cost_per_trade_usd, slippage_bps.
+	•	Add POST /risk/montecarlo (Pydantic input/output) returning summary stats and arrays for plotting.
+	•	In apps/web, add a Risk Sandbox page with sliders/inputs, charts for sample equity curves, final equity histogram, and max-drawdown distribution. Persist last-used params in local storage.
+
+Defaults: p=0.33, R=3, risk=0.5%, trades=10/wk, weeks=52, cost=$1, slippage_bps=10.
+
+DoD: Endpoint works; UI renders charts; tiles show P(≥2×) and P(≥3×).
+
+⸻
+
+3) Polygon client & core scanner logic (Day 1–2)
+
+Do:
+	•	Implement apps/api/app/services/polygon_client.py with:
+	•	get_full_market_snapshot()
+	•	get_single_ticker_snapshot(ticker)
+	•	get_aggregates(ticker, mult, timespan, start, end)
+	•	get_ticker_overview(ticker)
+	•	Retries, exponential backoff, Redis caching.
+	•	Implement scanner.py pure functions:
+	•	compute_features(bars, snapshot, ref) → trend alignment (20/50/200 EMA), ATR percentile, RVOL, VWAP distance/z, pivot proximity, regime flags.
+	•	score_features(features) → price/volume/volatility subscores + overall.
+	•	position_sizing(entry, stop, portfolio_value, risk_pct) (deterministic).
+	•	New: costs_in_R(slippage_bps, fees_usd, entry, risk_per_share) and net_expected_R(p_target, R, costs_R).
+	•	Map initial score→prob via a monotone stub (replace later by isotonic calibration).
+	•	Add feature flag USE_POLYGON_LIVE (fixtures vs live).
+
+Endpoints:
+	•	POST /scan/preview → compute top-N opportunities from fixtures at first, including p_target, rr_ratio, costs_r, net_expected_r, and a guardrail status (e.g., “blocked by max heat”).
+
+DoD: Unit tests pass using fixtures; preview endpoint returns full rows with net metrics and guardrail badges.
+
+⸻
+
+4) Scheduling & market hours (Day 2–3)
+
+Do:
+	•	Add Celery (or APScheduler) schedules:
+	•	08:30 ET pre-market scan
+	•	Every 5 min during regular US sessions (use exchange calendar; honor holidays/half-days)
+	•	16:30 ET EOD analytics stub
+	•	Implement ET↔UTC helpers; log both ET and UTC timestamps.
+	•	Respect USE_POLYGON_LIVE; degrade gracefully without a key.
+
+DoD: Toggle .env to switch between fixtures and live; logs show schedule runs and selected symbols.
+
+⸻
+
+5) Thin UI flows (Day 3)
+
+Do:
+	•	Dashboard: sortable Top Opportunities table with sub-score bars, timestamp, p(target), net expected R, and a guardrail badge if sizing is blocked.
+	•	Detail page: Lightweight Charts with entry/stop/targets; Trade Setup card: R:R, p(target), net expected R, and [Copy Trade Details].
+
+DoD: Row → detail navigation; React Query handles data; chart attribution present.
+
+⸻
+
+6) Persistence (local Postgres) (Day 3–4)
+
+Do:
+	•	Add postgres to docker-compose; wire SQLAlchemy + Alembic.
+	•	Tables:
+	•	opportunities(id, symbol, ts, signal_score, price_score, volume_score, volatility_score, entry, stop, target1, target2, pos_size_usd, pos_size_shares, rr_ratio, p_target, net_expected_r, costs_r, slippage_bps, features JSONB)
+	•	signal_history(id, symbol, ts, signal_score, p_target, net_expected_r, mfe, mae, label_hit_target_before_stop, t_hit_target, slippage_bps, fees_usd, version)
+	•	trades(id, user_id NULLABLE for now, symbol, side, entry_time, entry_price, position_size, stop_loss, target_1, target_2, exit_time, exit_price, pnl, fees, slippage_bps, win_loss, tags, notes)
+	•	Indexes: unique (symbol, ts) on opportunities; btree on ts; GIN on features.
+
+Endpoints:
+GET /opportunities?limit=50, GET /signals/{symbol}/history, POST /trades.
+
+DoD: Scans write top-N to Postgres; UI loads from REST; history accumulates.
+
+⸻
+
+7) Alerts (Day 4)
+
+Do:
+	•	Rules: new opportunity above threshold; price near entry/stop/target; (optional) target/stop probability crosses a threshold.
+	•	Delivery: in-app toasts; optional email via SMTP.
+	•	Infra: Redis Streams for fan-out; alert audit log table.
+
+DoD: Alerts fire and appear in UI; threshold config via .env.
+
+⸻
+
+8) Apply Visa Product Design System skin (Day 4–5)
+
+Do:
+	•	Integrate VDS tokens/components across dashboard, detail, and forms (keep chart lib).
+	•	Document token mapping in docs/vds-refs.md.
+
+DoD: App visually aligns with VDS; no UX regressions.
+
+⸻
+
+9) Calibration job & summary (Nightly)
+
+Do:
+	•	Nightly job labels signal_history (hit_target_before_stop, time_to_hit, MFE/MAE).
+	•	Compute reliability by score decile, Brier score, and a suggested isotonic mapping to refine score→prob.
+	•	Endpoint: GET /calibration/summary returns per-decile predicted vs realized p, Brier, and current mapping.
+
+DoD: Calibration JSON available; UI tile/mini-chart to visualize reliability curve.
+
+⸻
+
+10) Supabase & Auth (last)
+
+Do:
+	•	Swap DATABASE_URL to Supabase; migrate schema.
+	•	Add Supabase Auth (email/OAuth).
+	•	Add user_id and RLS to trades, alerts, and any user settings.
+	•	Keep scanning server-side/shared; overlay user data per session.
+
+DoD: Users sign in; personal data isolated; shared opportunities accessible as configured.
+
+⸻
+
+ACCEPTANCE CHECKLIST (verify before “live”)
+	•	docker compose up runs web/api/redis/postgres, health checks pass.
+	•	Typed request/response models across API; fixtures mode works with USE_POLYGON_LIVE=false.
+	•	Scheduler honors US sessions; timestamps logged in ET & UTC.
+	•	Dashboard & Detail show p(target), net expected R, and guardrail badges.
+	•	Lightweight Charts attribution present.
+	•	VDS tokens applied; accessible components used.
+	•	Alembic migrations reproducible; indices present; history recorded.
+	•	Calibration summary endpoint returns deciles & metrics.
+	•	Promotion gates satisfied: calibration, expectancy, Monte Carlo.
+
+⸻
+
+OPERATING PRINCIPLES FOR THE AGENT
+	•	Code against pinned fixtures first; flip to live only when USE_POLYGON_LIVE=true.
+	•	Never compute features with same-bar lookahead; use t−1 data for entries at t.
+	•	Document assumptions in code and in docs/*.
+	•	Log feature version into signal_history.version to track schema drift.
+	•	When guardrails block a signal, surface the reason in API & UI.
+
+⸻
+
+NEXT ACTION (start now)
+	1.	Task 0–1: Bootstrap repo, contracts, and synthetic data.
+	2.	Task 2: Fetch & pin docs + fixtures.
+	3.	Task 2.5: Implement Risk Sandbox (/risk/montecarlo) + UI page.
+	4.	Task 3: Polygon client + scanner with p_target, costs_in_R, net_expected_R, guardrails, fixtures first.
+
+When done, present:
+	•	Running services + screenshots.
+	•	docs/REFERENCES.md, docs/polygon-refs.md with extracted schemas.
+	•	Example JSON fixture files.
+	•	Output from /scan/preview and /risk/montecarlo using defaults.
