@@ -15,7 +15,10 @@
   "dependencies": {
     "@alpha-scanner/shared": "workspace:*",
     "@tanstack/react-query": "^5.17.0",
+    "chart.js": "^4.5.0",
+    "lightweight-charts": "^5.0.8",
     "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1"
   },

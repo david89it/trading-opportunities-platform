@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.routers import health, opportunities
+from app.routers import health, opportunities, risk
 
 # Create FastAPI app instance
 app = FastAPI(
@@ -30,6 +30,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(opportunities.router, prefix="/api/v1", tags=["opportunities"])
+app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
 
 # Global exception handler
 @app.exception_handler(Exception)

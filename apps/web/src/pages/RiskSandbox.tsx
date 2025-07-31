@@ -5,12 +5,14 @@
  * and real-time visualization of trading strategy risk metrics.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
 
 import RangeSlider from '../components/RangeSlider';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { EquityCurveChart } from '../components/EquityCurveChart';
+import { HistogramChart } from '../components/HistogramChart';
 
 import { runMonteCarloSimulation, handleRiskApiError } from '../services/riskApi';
 import {
@@ -342,44 +344,44 @@ function RiskSandbox() {
                 </div>
               </div>
 
-              {/* Placeholder for Charts */}
-              <div
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '8px',
-                  padding: '2rem',
-                  textAlign: 'center',
-                  marginBottom: '2rem',
-                }}
-              >
-                <h3 style={{ margin: '0 0 1rem 0', color: 'var(--color-text-secondary)' }}>
-                  📈 Equity Curves
-                </h3>
-                <p style={{ color: 'var(--color-text-muted)' }}>
-                  TradingView Lightweight Charts will be integrated here.
-                  <br />
-                  Showing {results.sample_equity_paths.length} sample equity paths over {results.parameters.weeks} weeks.
-                </p>
+              {/* Equity Curves Chart */}
+              <div style={{ marginBottom: '2rem' }}>
+                <EquityCurveChart
+                  simulationResults={{
+                    equity_paths: results.sample_equity_paths.map(path => 
+                      path.map(point => point.equity)
+                    ),
+                    final_equity: results.final_equity_distribution,
+                    statistics: {
+                      mean_final_equity: results.mean_final_equity,
+                      median_final_equity: results.median_final_equity,
+                      p95_max_drawdown: results.risk_metrics.p95_max_drawdown,
+                      prob_2x: results.risk_metrics.prob_2x,
+                      prob_3x: results.risk_metrics.prob_3x,
+                      sharpe_ratio: results.risk_metrics.sharpe_ratio,
+                      profit_factor: results.risk_metrics.profit_factor,
+                    },
+                    params: {
+                      weeks: results.parameters.weeks,
+                      trades_per_week: results.parameters.trades_per_week,
+                    },
+                  }}
+                  width={800}
+                  height={400}
+                  showPaths={Math.min(15, results.sample_equity_paths.length)}
+                  showStatistics={true}
+                />
               </div>
 
-              <div
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '8px',
-                  padding: '2rem',
-                  textAlign: 'center',
-                }}
-              >
-                <h3 style={{ margin: '0 0 1rem 0', color: 'var(--color-text-secondary)' }}>
-                  📊 Final Equity Distribution
-                </h3>
-                <p style={{ color: 'var(--color-text-muted)' }}>
-                  Histogram visualization will be integrated here.
-                  <br />
-                  Showing distribution of {results.final_equity_distribution.length.toLocaleString()} final outcomes.
-                </p>
+              {/* Final Equity Distribution Chart */}
+              <div>
+                <HistogramChart
+                  finalEquityData={results.final_equity_distribution}
+                  binCount={30}
+                  width={800}
+                  height={400}
+                  showStatistics={true}
+                />
               </div>
             </div>
           )}
