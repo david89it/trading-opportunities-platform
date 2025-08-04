@@ -123,3 +123,26 @@ export interface Opportunity {
   /** Feature schema version for tracking model changes */
   version: string;
 }
+
+/**
+ * API Response for Opportunities List
+ * 
+ * Response model that wraps the list of opportunities with pagination
+ * and metadata from the API endpoint.
+ */
+export interface OpportunitiesResponse {
+  /** Array of trading opportunities */
+  opportunities: Opportunity[];
+  
+  /** Total number of opportunities available (before pagination) */
+  total: number;
+  
+  /** Number of opportunities requested in this page */
+  limit: number;
+  
+  /** Number of opportunities skipped (pagination offset) */
+  offset: number;
+  
+  /** ISO 8601 timestamp when the response was generated */
+  timestamp: string;
+}

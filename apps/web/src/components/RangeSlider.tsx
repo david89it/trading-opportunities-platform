@@ -98,7 +98,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
         />
         
         {/* Custom thumb styling */}
-        <style jsx>{`
+        <style>{`
           input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;

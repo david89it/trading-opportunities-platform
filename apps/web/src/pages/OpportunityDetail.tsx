@@ -1,9 +1,9 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchOpportunityBySymbol } from '@/services/api'
-import LoadingSpinner from '@/components/LoadingSpinner'
-import ErrorMessage from '@/components/ErrorMessage'
+import { fetchOpportunityBySymbol } from '../services/api'
+import LoadingSpinner from '../components/LoadingSpinner'
+import ErrorMessage from '../components/ErrorMessage'
 
 function OpportunityDetail() {
   const { symbol } = useParams<{ symbol: string }>()

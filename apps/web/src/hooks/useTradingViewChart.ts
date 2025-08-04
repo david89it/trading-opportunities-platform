@@ -1,11 +1,14 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { 
   createChart, 
+  LineSeries,
   IChartApi, 
   ISeriesApi, 
   LineData, 
   ChartOptions,
-  ColorType 
+  ColorType,
+  DeepPartial,
+  LineSeriesOptions
 } from 'lightweight-charts';
 
 interface ChartConfig {
@@ -39,7 +42,7 @@ export const useTradingViewChart = (config: ChartConfig) => {
       chartRef.current.remove();
     }
 
-    const chartOptions: ChartOptions = {
+    const chartOptions: DeepPartial<ChartOptions> = {
       width: config.width,
       height: config.height,
       layout: {
@@ -49,41 +52,14 @@ export const useTradingViewChart = (config: ChartConfig) => {
       grid: {
         vertLines: { 
           color: config.grid?.vertLines.color || '#f0f0f0',
-          style: 0,
-          visible: true,
         },
         horzLines: { 
           color: config.grid?.horzLines.color || '#f0f0f0',
-          style: 0,
-          visible: true,
         },
       },
       timeScale: {
         timeVisible: config.timeScale?.timeVisible ?? true,
         secondsVisible: config.timeScale?.secondsVisible ?? false,
-        borderColor: '#cccccc',
-      },
-      rightPriceScale: {
-        borderColor: '#cccccc',
-      },
-      crosshair: {
-        mode: 1,
-        vertLine: {
-          color: '#2196F3',
-          width: 1,
-          style: 2,
-          visible: true,
-          labelVisible: true,
-          labelBackgroundColor: '#2196F3',
-        },
-        horzLine: {
-          color: '#2196F3',
-          width: 1,
-          style: 2,
-          visible: true,
-          labelVisible: true,
-          labelBackgroundColor: '#2196F3',
-        },
       },
     };
 
@@ -109,14 +85,16 @@ export const useTradingViewChart = (config: ChartConfig) => {
     lineWidth?: number;
     title?: string;
     id?: string;
-  }): ISeriesApi<any> | null => {
+  }) => {
     if (!chartRef.current) return null;
 
-    const series = chartRef.current.addSeries(LineSeries, {
+    const seriesOptions: DeepPartial<LineSeriesOptions> = {
       color: options.color,
-      lineWidth: (options.lineWidth || 2) as any,
+      lineWidth: (options.lineWidth || 2) as any, // Cast to satisfy strict typing
       title: options.title,
-    });
+    };
+
+    const series = chartRef.current.addSeries(LineSeries, seriesOptions);
 
     if (options.id) {
       seriesMapRef.current.set(options.id, series);

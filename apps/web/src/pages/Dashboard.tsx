@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+import { Opportunity } from '@alpha-scanner/shared'
 
-import { fetchOpportunities } from '@/services/api'
-import OpportunityTable from '@/components/OpportunityTable'
-import LoadingSpinner from '@/components/LoadingSpinner'
-import ErrorMessage from '@/components/ErrorMessage'
+import { fetchOpportunities } from '../services/api'
+import OpportunityTable from '../components/OpportunityTable'
+import LoadingSpinner from '../components/LoadingSpinner'
+import ErrorMessage from '../components/ErrorMessage'
 
 function Dashboard() {
   const {
@@ -13,7 +14,7 @@ function Dashboard() {
     refetch,
   } = useQuery({
     queryKey: ['opportunities'],
-    queryFn: () => fetchOpportunities({ limit: 50 }),
+    queryFn: () => fetchOpportunities(),
     refetchInterval: 30000, // Refetch every 30 seconds
   })
 
@@ -103,7 +104,7 @@ function Dashboard() {
             </h4>
             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-info)' }}>
               {(
-                opportunities.opportunities.reduce((sum, opp) => sum + opp.signal_score, 0) /
+                opportunities.opportunities.reduce((sum: number, opp: Opportunity) => sum + opp.signal_score, 0) /
                 opportunities.opportunities.length
               ).toFixed(1)}
             </div>
@@ -122,7 +123,7 @@ function Dashboard() {
             </h4>
             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
               {(
-                opportunities.opportunities.reduce((sum, opp) => sum + opp.setup.rr_ratio, 0) /
+                opportunities.opportunities.reduce((sum: number, opp: Opportunity) => sum + opp.setup.rr_ratio, 0) /
                 opportunities.opportunities.length
               ).toFixed(1)}:1
             </div>
@@ -140,7 +141,7 @@ function Dashboard() {
               Blocked Signals
             </h4>
             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-danger)' }}>
-              {opportunities.opportunities.filter(opp => opp.guardrail_status === 'blocked').length}
+              {opportunities.opportunities.filter((opp: Opportunity) => opp.guardrail_status === 'blocked').length}
             </div>
           </div>
         </div>

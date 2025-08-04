@@ -96,6 +96,24 @@ interface Opportunity {
     /** Feature schema version for tracking model changes */
     version: string;
 }
+/**
+ * API Response for Opportunities List
+ *
+ * Response model that wraps the list of opportunities with pagination
+ * and metadata from the API endpoint.
+ */
+interface OpportunitiesResponse {
+    /** Array of trading opportunities */
+    opportunities: Opportunity[];
+    /** Total number of opportunities available (before pagination) */
+    total: number;
+    /** Number of opportunities requested in this page */
+    limit: number;
+    /** Number of opportunities skipped (pagination offset) */
+    offset: number;
+    /** ISO 8601 timestamp when the response was generated */
+    timestamp: string;
+}
 
 type TradeSide = 'long' | 'short';
 type TradeStatus = 'open' | 'closed' | 'cancelled';
@@ -302,4 +320,4 @@ declare const formatCurrency: (amount: number) => string;
 declare const formatPercentage: (value: number, decimals?: number) => string;
 declare const formatR: (r: number, decimals?: number) => string;
 
-export { API_CONFIG, type CalibrationMetrics, type CalibrationSummary, DEFAULT_MC_PARAMS, DEFAULT_RISK_PARAMS, type FeatureScores, type GuardrailCheck, MARKET_SCHEDULE, type MonteCarloInput, type MonteCarloOutput, type Opportunity, PROMOTION_GATES, type PortfolioRisk, type RiskMetrics, type RiskParameters, SCORING, type SignalHistoryRow, type Trade, type TradeOutcome, type TradePerformance, type TradeSetup, type TradeSide, type TradeStatus, VALIDATION_LIMITS, formatCurrency, formatPercentage, formatR, isValidPrice, isValidProbability, isValidRiskParams, isValidScore, isValidSymbol, isValidTimestamp, isValidTradeSetup, isValidVolume };
+export { API_CONFIG, type CalibrationMetrics, type CalibrationSummary, DEFAULT_MC_PARAMS, DEFAULT_RISK_PARAMS, type FeatureScores, type GuardrailCheck, MARKET_SCHEDULE, type MonteCarloInput, type MonteCarloOutput, type OpportunitiesResponse, type Opportunity, PROMOTION_GATES, type PortfolioRisk, type RiskMetrics, type RiskParameters, SCORING, type SignalHistoryRow, type Trade, type TradeOutcome, type TradePerformance, type TradeSetup, type TradeSide, type TradeStatus, VALIDATION_LIMITS, formatCurrency, formatPercentage, formatR, isValidPrice, isValidProbability, isValidRiskParams, isValidScore, isValidSymbol, isValidTimestamp, isValidTradeSetup, isValidVolume };

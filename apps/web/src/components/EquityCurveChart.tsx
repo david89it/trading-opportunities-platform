@@ -58,7 +58,6 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
     chartContainerRef, 
     chart, 
     addLineSeries, 
-    updateSeriesData, 
     clearAllSeries,
     resizeChart 
   } = useTradingViewChart(chartConfig);
@@ -70,25 +69,31 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
     }
 
     const totalTrades = simulationResults.params.weeks * simulationResults.params.trades_per_week;
-    const timeStamps = Array.from({ length: totalTrades + 1 }, (_, i) => i);
 
     // Calculate statistics for percentiles
-    const pathCount = simulationResults.equity_paths.length;
     const meanPath: number[] = [];
     const p25Path: number[] = [];
     const p75Path: number[] = [];
 
     for (let i = 0; i <= totalTrades; i++) {
-      const valuesAtPoint = simulationResults.equity_paths.map(path => path[i] || path[path.length - 1]);
+      const valuesAtPoint = simulationResults.equity_paths
+        .map(path => path[i] || path[path.length - 1])
+        .filter((val): val is number => typeof val === 'number');
+      
+      if (valuesAtPoint.length === 0) continue;
+      
       valuesAtPoint.sort((a, b) => a - b);
       
-      meanPath.push(valuesAtPoint.reduce((sum, val) => sum + val, 0) / pathCount);
-      p25Path.push(valuesAtPoint[Math.floor(pathCount * 0.25)]);
-      p75Path.push(valuesAtPoint[Math.floor(pathCount * 0.75)]);
+      const mean = valuesAtPoint.reduce((sum, val) => sum + val, 0) / valuesAtPoint.length;
+      const p25Index = Math.floor(valuesAtPoint.length * 0.25);
+      const p75Index = Math.floor(valuesAtPoint.length * 0.75);
+      
+      meanPath.push(mean);
+      p25Path.push(valuesAtPoint[p25Index] ?? mean);
+      p75Path.push(valuesAtPoint[p75Index] ?? mean);
     }
 
     return {
-      timeStamps,
       individualPaths: simulationResults.equity_paths.slice(0, showPaths),
       meanPath,
       p25Path,
@@ -102,7 +107,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
 
     clearAllSeries();
 
-    const { timeStamps, individualPaths, meanPath, p25Path, p75Path } = processChartData;
+    const { individualPaths, meanPath, p25Path, p75Path } = processChartData;
 
     // Add individual paths (with transparency)
     individualPaths.forEach((path, index) => {

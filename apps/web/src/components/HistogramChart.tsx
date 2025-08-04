@@ -77,7 +77,13 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
       let binIndex = Math.floor((value - min) / binWidth);
       // Handle edge case where value equals max
       if (binIndex >= binCount) binIndex = binCount - 1;
-      bins[binIndex].count++;
+      // Ensure binIndex is valid and bin exists
+      if (binIndex >= 0 && binIndex < bins.length) {
+        const bin = bins[binIndex];
+        if (bin) {
+          bin.count++;
+        }
+      }
     });
 
     // Calculate percentages
@@ -151,8 +157,9 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
       tooltip: {
         callbacks: {
           title: (context) => {
-            const binIndex = context[0].dataIndex;
-            const bin = histogramData?.bins[binIndex];
+            if (!context || context.length === 0) return '';
+            const binIndex = context[0]?.dataIndex;
+            const bin = histogramData?.bins[binIndex ?? -1];
             if (bin) {
               return `$${(bin.min / 1000).toFixed(0)}K - $${(bin.max / 1000).toFixed(0)}K`;
             }
@@ -255,7 +262,7 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
             <div>
               <div className="text-gray-600">Median</div>
               <div className="font-semibold">
-                ${histogramData.statistics.median.toLocaleString()}
+                ${histogramData.statistics.median?.toLocaleString() ?? 'N/A'}
               </div>
             </div>
             <div>
@@ -273,13 +280,13 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
             <div>
               <div className="text-gray-600">25th Percentile</div>
               <div className="font-semibold">
-                ${histogramData.statistics.p25.toLocaleString()}
+                ${histogramData.statistics.p25?.toLocaleString() ?? 'N/A'}
               </div>
             </div>
             <div>
               <div className="text-gray-600">75th Percentile</div>
               <div className="font-semibold">
-                ${histogramData.statistics.p75.toLocaleString()}
+                ${histogramData.statistics.p75?.toLocaleString() ?? 'N/A'}
               </div>
             </div>
             <div>
