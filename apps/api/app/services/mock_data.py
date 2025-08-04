@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import List
 
-from app.models.opportunities import Opportunity, FeatureScores, TradeSetup, RiskMetrics
+from app.models.opportunities import Opportunity, FeatureScores, TradeSetup, RiskMetrics, GuardrailStatus
 
 # Mock symbols with realistic price ranges
 MOCK_SYMBOLS = [
@@ -42,11 +42,11 @@ def generate_mock_opportunity(symbol: str, price_min: float, price_max: float) -
     # Generate base price within range
     current_price = round(random.uniform(price_min, price_max), 2)
     
-    # Generate scores with some correlation
-    base_score = random.uniform(60, 95)  # Focus on higher quality signals
-    price_score = max(0, min(100, base_score + random.uniform(-15, 15)))
-    volume_score = max(0, min(100, base_score + random.uniform(-20, 20)))
-    volatility_score = max(0, min(100, base_score + random.uniform(-10, 25)))
+    # Generate scores with some correlation (0-10 scale)
+    base_score = random.uniform(6.0, 9.5)  # Focus on higher quality signals
+    price_score = max(0, min(10, base_score + random.uniform(-1.5, 1.5)))
+    volume_score = max(0, min(10, base_score + random.uniform(-2.0, 2.0)))
+    volatility_score = max(0, min(10, base_score + random.uniform(-1.0, 2.5)))
     
     # Overall score is weighted average
     overall_score = (price_score * 0.4 + volume_score * 0.3 + volatility_score * 0.3)
@@ -76,7 +76,7 @@ def generate_mock_opportunity(symbol: str, price_min: float, price_max: float) -
     position_size_usd = position_size_shares * entry_price
     
     # Risk metrics - ensure p_target is within validation range (0.2-0.8)
-    p_target = 0.25 + (overall_score / 100) * 0.50  # 25% to 75% based on score
+    p_target = 0.25 + (overall_score / 10) * 0.50  # 25% to 75% based on score
     slippage_bps = random.uniform(5, 25)  # 5 to 25 basis points
     costs_r = random.uniform(0.05, 0.15)  # 0.05R to 0.15R in costs
     net_expected_r = (p_target * rr_ratio) - ((1 - p_target) * 1) - costs_r
@@ -93,12 +93,12 @@ def generate_mock_opportunity(symbol: str, price_min: float, price_max: float) -
     }
     
     # Guardrail status
-    guardrail_status = "allowed"
+    guardrail_status = GuardrailStatus.APPROVED
     guardrail_reason = None
     
     # Occasionally block signals for demonstration
     if random.random() < 0.1:  # 10% chance
-        guardrail_status = "blocked"
+        guardrail_status = GuardrailStatus.BLOCKED
         guardrail_reason = random.choice([
             "Max heat exceeded",
             "Daily stop loss reached",
@@ -106,7 +106,7 @@ def generate_mock_opportunity(symbol: str, price_min: float, price_max: float) -
             "Low liquidity"
         ])
     elif random.random() < 0.15:  # 15% chance
-        guardrail_status = "warning"
+        guardrail_status = GuardrailStatus.REVIEW
         guardrail_reason = random.choice([
             "High volatility",
             "Earnings within 5 days",

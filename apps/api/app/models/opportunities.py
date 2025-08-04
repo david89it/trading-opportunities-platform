@@ -7,8 +7,16 @@ Enhanced with comprehensive field validation for financial data integrity.
 
 import re
 from datetime import datetime, time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+from enum import Enum
 from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+
+class GuardrailStatus(str, Enum):
+    """Guardrail status for trading opportunities"""
+    APPROVED = "approved"
+    REVIEW = "review"
+    BLOCKED = "blocked"
 
 
 class FeatureScores(BaseModel):
@@ -178,9 +186,8 @@ class Opportunity(BaseModel):
     features: Dict[str, Any] = Field(
         description="Raw feature data used in signal generation"
     )
-    guardrail_status: str = Field(
-        default="allowed",
-        pattern=r'^(allowed|blocked|warning)$',
+    guardrail_status: GuardrailStatus = Field(
+        default=GuardrailStatus.APPROVED,
         description="Risk management guardrail status"
     )
     guardrail_reason: Optional[str] = Field(
@@ -235,3 +242,28 @@ class Opportunity(BaseModel):
             raise ValueError('ATR% must be between 1.0 and 8.0')
         
         return v
+
+
+class OpportunitiesResponse(BaseModel):
+    """Response model for opportunities API endpoints"""
+    model_config = ConfigDict(validate_assignment=True)
+    
+    opportunities: List[Opportunity] = Field(
+        description="List of trading opportunities"
+    )
+    total: int = Field(
+        ge=0,
+        description="Total number of opportunities available (before pagination)"
+    )
+    limit: int = Field(
+        ge=1,
+        le=500,
+        description="Number of opportunities requested in this page"
+    )
+    offset: int = Field(
+        ge=0,
+        description="Number of opportunities skipped (pagination offset)"
+    )
+    timestamp: datetime = Field(
+        description="ISO 8601 timestamp when the response was generated"
+    )
