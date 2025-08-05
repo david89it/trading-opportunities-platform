@@ -152,7 +152,7 @@
         "dependencies": [
           2
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -192,7 +192,7 @@
               "4.3"
             ],
             "details": "Integrate TradingView Lightweight Charts v5 to display equity curve paths from Monte Carlo simulations. Create histogram visualization for final equity distribution using chart.js or similar. Ensure proper chart sizing, legends, and interactive features. Handle multiple equity paths display with performance optimization.\n<info added on 2025-07-31T16:18:21.570Z>\nTradingView Charts Integration Progress Update:\n\nCOMPLETED COMPONENTS:\n- Successfully installed TradingView Lightweight Charts v5.0.8 and Chart.js v4.5.0\n- Created comprehensive research on integration best practices\n- Built EquityCurveChart component for Monte Carlo simulation paths visualization\n- Built HistogramChart component for final equity distribution visualization\n- Integrated both components into RiskSandbox page\n- Successfully moved files to correct app directory structure\n\nCURRENT TECHNICAL ISSUES TO RESOLVE:\n1. TradingView Lightweight Charts API changes - addLineSeries vs addSeries method\n2. Chart options type mismatches - need to update configuration structure\n3. Data structure misalignment between API response and chart component expectations\n4. TypeScript strict mode issues with undefined checks\n\nIMMEDIATE NEXT STEPS:\n- Fix TradingView Charts API compatibility issues  \n- Resolve data structure type mismatches\n- Clean up unused imports and variables\n- Test chart rendering with actual simulation data\n\nSTATUS: Core functionality implemented, debugging API integration issues\n</info added on 2025-07-31T16:18:21.570Z>",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Chart rendering tests verify equity curves display correctly, histogram shows proper distribution, charts are responsive and performant with large datasets"
           },
           {
@@ -203,8 +203,8 @@
               "4.1",
               "4.4"
             ],
-            "details": "Implement statistical calculations for P(≥2×), P(≥3×), P95 max drawdown, Sharpe ratio, and other risk metrics. Create analytics dashboard displaying these metrics with proper formatting and explanations. Include maximum drawdown analysis, win rate statistics, and profit factor calculations from simulation results.",
-            "status": "pending",
+            "details": "Implement statistical calculations for P(≥2×), P(≥3×), P95 max drawdown, Sharpe ratio, and other risk metrics. Create analytics dashboard displaying these metrics with proper formatting and explanations. Include maximum drawdown analysis, win rate statistics, and profit factor calculations from simulation results.\n<info added on 2025-08-05T07:52:51.485Z>\nRISK METRICS DASHBOARD COMPLETED ✅\n\nSuccessfully implemented comprehensive risk analytics dashboard with:\n\n📊 KEY PERFORMANCE METRICS:\n- Mean & Median Final Equity with proper formatting\n- Expected Return percentage with color coding\n- Enhanced Sharpe Ratio display with threshold-based styling\n\n📈 PROBABILITY ANALYSIS SECTION:\n- P(≥2× Return) - highlighted in green panels\n- P(≥3× Return) - highlighted in green panels  \n- P(Loss) - highlighted in red warning panels\n- Win Rate - highlighted in blue info panels\n- All with proper color-coded backgrounds and borders\n\n⚠️ COMPREHENSIVE RISK ANALYSIS:\n- P95 Maximum Drawdown with threshold warnings (>20% = danger)\n- Value at Risk (VaR 95%) - worst-case scenario\n- Conditional Value at Risk (CVaR 95%) - tail risk\n- Profit Factor with performance thresholds (>1.5 = good)\n\n🚀 PROMOTION GATES (GO-LIVE READINESS):\nImplemented automated validation of PRD promotion gates:\n- ✅/❌ Monte Carlo Gate: P(≥2×) > 40% (real-time validation)\n- ✅/❌ Drawdown Gate: P95 Max DD < 20% (real-time validation)  \n- ⏳ Calibration Gate: Requires live signal history (≥300 trades)\n- ⏳ Expectancy Gate: Net expected R > +0.1R/trade (out-of-sample)\n\nTECHNICAL IMPLEMENTATION:\n- Responsive grid layouts with proper breakpoints\n- Color-coded metrics based on performance thresholds\n- Visual hierarchy with section headers and borders\n- Comprehensive error handling and data validation\n- Proper TypeScript integration with risk metrics interface\n\nThe dashboard now provides complete visibility into trading strategy risk profiles and automatically validates go-live readiness per PRD requirements. All metrics align with professional risk management standards.\n</info added on 2025-08-05T07:52:51.485Z>",
+            "status": "done",
             "testStrategy": "Statistical accuracy tests verify risk metrics calculations match expected mathematical formulas, dashboard displays update correctly with simulation changes, and edge cases are handled properly"
           }
         ]
@@ -220,8 +220,62 @@
           3,
           4
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Polygon.io HTTP Client Implementation",
+            "description": "Build the core async HTTP client with retry logic and caching for Polygon.io API",
+            "dependencies": [],
+            "details": "Create apps/api/app/services/polygon_client.py with httpx async client, exponential backoff retry mechanism (max 3 retries), Redis caching layer with 5-minute TTL for volatile data, proper error handling for API failures, rate limiting compliance, and environment-based API key management\n<info added on 2025-08-04T13:53:53.741Z>\nIMPLEMENTATION COMPLETED ✅\n\nCore async HTTP client fully implemented with:\n- Exponential backoff retry mechanism (max 3 attempts)\n- Redis caching layer with 5-minute TTL for volatile data\n- Rate limiting compliance (12-second delays for free tier)\n- Environment-based API key management with fixtures mode\n- Comprehensive error handling via PolygonApiError exception class\n\nFour main API methods implemented:\n- get_full_market_snapshot() - Complete market overview\n- get_single_ticker_snapshot() - Individual stock data\n- get_aggregates() - OHLCV bars with timeframe support  \n- get_ticker_overview() - Fundamental company data\n\nAdditional features:\n- Pydantic models for type safety (MarketSnapshot, AggregateBar, TickerOverview)\n- Fixture system with realistic market data (AAPL, MSFT, TSLA)\n- Context manager support for proper resource cleanup\n- Convenience functions for quick access\n- Comprehensive test suite with unit and integration tests\n- Quick test script for manual verification\n\nClient tested in fixture mode with realistic data structure matching Polygon.io API. Ready to switch to live mode via USE_POLYGON_LIVE=true environment variable. Foundation complete for scanner logic implementation.\n</info added on 2025-08-04T13:53:53.741Z>",
+            "status": "done",
+            "testStrategy": "Test retry logic with mock API failures, verify Redis caching behavior, validate rate limiting compliance, test with both live API and fixture data modes"
+          },
+          {
+            "id": 2,
+            "title": "Market Data Retrieval Methods",
+            "description": "Implement specific Polygon.io API endpoint methods for market data collection",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Build get_full_market_snapshot() for full market overview, get_single_ticker_snapshot() for individual stock data, get_aggregates() for OHLCV bars with timeframe support, and get_ticker_overview() for fundamental data. Include proper parameter validation, response parsing, and error handling for each endpoint",
+            "status": "done",
+            "testStrategy": "Test each endpoint with valid/invalid parameters, verify response parsing accuracy, test error handling for API failures, validate data structure consistency"
+          },
+          {
+            "id": 3,
+            "title": "Technical Analysis Feature Computation",
+            "description": "Implement core technical analysis features using point-in-time data only",
+            "dependencies": [
+              "5.2"
+            ],
+            "details": "Create scanner.py with compute_features() function calculating trend alignment using 20/50/200 EMA crossovers, ATR percentile for volatility assessment, relative volume (RVOL) analysis, VWAP distance and z-score calculations, and pivot point proximity detection. Ensure strict point-in-time data usage to prevent lookahead bias",
+            "status": "pending",
+            "testStrategy": "Validate EMA calculations against known values, test ATR percentile accuracy, verify RVOL computations, check VWAP calculations, ensure no lookahead bias in all features"
+          },
+          {
+            "id": 4,
+            "title": "Feature Scoring and Risk Calculations",
+            "description": "Build scoring system that converts technical features into actionable risk/reward metrics",
+            "dependencies": [
+              "5.3"
+            ],
+            "details": "Implement score_features() to map technical indicators to 0-100 subscores, position_sizing() with risk percentage validation, costs_in_R() for slippage and fee calculations in R-multiple terms, and net_expected_R() computation for final opportunity assessment. Focus on identifying ≥3:1 risk/reward opportunities",
+            "status": "pending",
+            "testStrategy": "Test score mapping consistency, validate position sizing calculations, verify cost calculations accuracy, test R-multiple computations, ensure risk/reward ratio identification works correctly"
+          },
+          {
+            "id": 5,
+            "title": "Probability Calibration Framework",
+            "description": "Implement monotone score-to-probability mapping system for trade outcome prediction",
+            "dependencies": [
+              "5.4"
+            ],
+            "details": "Create isotonic calibration stub framework for converting feature scores to win probabilities, implement monotone mapping function to ensure logical score-probability relationships, add validation for probability bounds (0-1), and prepare integration points for future calibration data from signal history",
+            "status": "pending",
+            "testStrategy": "Test monotone mapping properties, validate probability bounds, verify calibration framework integration points, test with mock historical data"
+          }
+        ]
       },
       {
         "id": 6,
@@ -319,7 +373,7 @@
     ],
     "metadata": {
       "created": "2025-07-30T15:03:48.375Z",
-      "updated": "2025-07-31T15:24:03.216Z",
+      "updated": "2025-08-05T07:53:00.082Z",
       "description": "Tasks for master context"
     }
   }

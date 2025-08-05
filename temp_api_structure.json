@@ -1,0 +1,47 @@
+{
+  "opportunities": [
+    {
+      "id": "fd0e6c4e-1b53-49c5-8b1b-c1abfa97e5a7",
+      "symbol": "SQ",
+      "timestamp": "2025-08-04T12:15:07.046838Z",
+      "signal_score": 9.9,
+      "scores": {
+        "price": 9.8,
+        "volume": 10.0,
+        "volatility": 10.0,
+        "overall": 9.9
+      },
+      "setup": {
+        "entry": 78.96,
+        "stop": 73.03,
+        "target1": 101.46,
+        "target2": 112.71,
+        "position_size_usd": 631.68,
+        "position_size_shares": 8,
+        "rr_ratio": 3.79
+      },
+      "risk": {
+        "p_target": 0.746,
+        "net_expected_r": 2.475,
+        "costs_r": 0.102,
+        "slippage_bps": 14.1
+      },
+      "features": {
+        "rvol": 2.39,
+        "atr_pct": 5.7,
+        "vwap_distance": 1.236,
+        "ema_20_slope": -0.078,
+        "volume_20d_avg": 49814512,
+        "regime": "trending",
+        "earnings_days": 44
+      },
+      "guardrail_status": "review",
+      "guardrail_reason": "High volatility",
+      "version": "1.0.0"
+    }
+  ],
+  "total": 9,
+  "limit": 1,
+  "offset": 0,
+  "timestamp": "2025-08-04T12:33:07.047179Z"
+}

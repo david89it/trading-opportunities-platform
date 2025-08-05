@@ -318,13 +318,13 @@ function OpportunityDetail() {
               borderRadius: '4px',
               fontWeight: 'bold',
               backgroundColor:
-                opportunity.guardrail_status === 'allowed' ? 'var(--color-success)' :
-                opportunity.guardrail_status === 'warning' ? 'var(--color-warning)' :
+                opportunity.guardrail_status === 'approved' ? 'var(--color-success)' :
+                opportunity.guardrail_status === 'review' ? 'var(--color-warning)' :
                 'var(--color-danger)',
-              color: opportunity.guardrail_status === 'warning' ? 'black' : 'white',
+              color: opportunity.guardrail_status === 'review' ? 'black' : 'white',
             }}
           >
-            {(opportunity.guardrail_status || 'allowed').toUpperCase()}
+            {opportunity.guardrail_status.toUpperCase()}
           </span>
           
           {opportunity.guardrail_reason && (

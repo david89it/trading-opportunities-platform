@@ -1,468 +1,442 @@
 """
-Polygon.io API Client
+Polygon.io API Client with async HTTP, retry logic, and Redis caching.
 
-Handles market data fetching with retries, rate limiting, and caching.
-Supports both live API and fixture data for development.
+This client provides the foundation for fetching real market data to power
+the asymmetric alpha scanner. It handles API failures gracefully and caches
+data to respect rate limits.
 """
 
 import asyncio
 import json
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-import httpx
 import logging
-from functools import wraps
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Union
+from urllib.parse import urlencode
 
-from app.core.config import settings
+import httpx
+from pydantic import BaseModel, Field
+import redis.asyncio as redis
+
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
-# API Configuration
-POLYGON_BASE_URL = "https://api.polygon.io"
-FIXTURES_PATH = Path(__file__).parent.parent.parent.parent / "tests" / "fixtures" / "polygon"
 
-# Rate limiting configuration based on tier
-RATE_LIMITS = {
-    "free": {"requests_per_minute": 5, "delay_ms": 12000},
-    "basic": {"requests_per_minute": 100, "delay_ms": 600},
-    "starter": {"requests_per_minute": 500, "delay_ms": 120},
-    "developer": {"requests_per_minute": 1000, "delay_ms": 60},
-}
-
-class PolygonAPIError(Exception):
-    """Custom exception for Polygon API errors"""
-    def __init__(self, status_code: int, message: str, response_data: Optional[Dict] = None):
-        self.status_code = status_code
+class PolygonApiError(Exception):
+    """Raised when Polygon.io API returns an error"""
+    def __init__(self, message: str, status_code: Optional[int] = None, response_data: Optional[Dict] = None):
         self.message = message
-        self.response_data = response_data or {}
-        super().__init__(f"Polygon API Error {status_code}: {message}")
+        self.status_code = status_code
+        self.response_data = response_data
+        super().__init__(self.message)
 
-class RateLimiter:
-    """Simple rate limiter for API requests"""
-    
-    def __init__(self, requests_per_minute: int = 100):
-        self.requests_per_minute = requests_per_minute
-        self.min_delay = 60.0 / requests_per_minute
-        self.last_request = 0.0
-    
-    async def acquire(self):
-        """Acquire rate limit slot, waiting if necessary"""
-        now = asyncio.get_event_loop().time()
-        time_passed = now - self.last_request
-        
-        if time_passed < self.min_delay:
-            wait_time = self.min_delay - time_passed
-            await asyncio.sleep(wait_time)
-        
-        self.last_request = asyncio.get_event_loop().time()
 
-def with_retries(max_retries: int = 3, backoff_factor: float = 1.0):
-    """Decorator for retrying failed requests with exponential backoff"""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            last_exception = None
-            
-            for attempt in range(max_retries + 1):
-                try:
-                    return await func(*args, **kwargs)
-                except PolygonAPIError as e:
-                    last_exception = e
-                    
-                    # Don't retry on 4xx errors (except 429 rate limit)
-                    if 400 <= e.status_code < 500 and e.status_code != 429:
-                        raise
-                    
-                    if attempt == max_retries:
-                        raise
-                    
-                    # Exponential backoff
-                    wait_time = backoff_factor * (2 ** attempt)
-                    logger.warning(
-                        f"API request failed (attempt {attempt + 1}/{max_retries + 1}), "
-                        f"retrying in {wait_time}s: {e}"
-                    )
-                    await asyncio.sleep(wait_time)
-                
-                except Exception as e:
-                    last_exception = e
-                    if attempt == max_retries:
-                        raise
-                    
-                    wait_time = backoff_factor * (2 ** attempt)
-                    logger.warning(f"Request failed, retrying in {wait_time}s: {e}")
-                    await asyncio.sleep(wait_time)
-            
-            # This should never be reached, but just in case
-            if last_exception:
-                raise last_exception
-                
-        return wrapper
-    return decorator
+class MarketSnapshot(BaseModel):
+    """Single ticker market snapshot from Polygon.io"""
+    ticker: str
+    updated: int = Field(description="Unix timestamp of last update")
+    day: Dict[str, float] = Field(description="Day's OHLCV data")
+    last_quote: Optional[Dict[str, float]] = Field(None, description="Last quote data")
+    last_trade: Optional[Dict[str, float]] = Field(None, description="Last trade data")
+    prev_day: Optional[Dict[str, float]] = Field(None, description="Previous day's data")
+
+
+class AggregateBar(BaseModel):
+    """OHLCV aggregate bar from Polygon.io"""
+    c: float = Field(description="Close price")
+    h: float = Field(description="High price")
+    l: float = Field(description="Low price")
+    o: float = Field(description="Open price")
+    v: float = Field(description="Volume")
+    vw: Optional[float] = Field(None, description="Volume weighted average price")
+    t: int = Field(description="Unix timestamp")
+    n: Optional[int] = Field(None, description="Number of transactions")
+
+
+class TickerOverview(BaseModel):
+    """Ticker overview/details from Polygon.io"""
+    ticker: str
+    name: str
+    description: Optional[str] = None
+    market_cap: Optional[float] = None
+    share_class_shares_outstanding: Optional[float] = None
+    weighted_shares_outstanding: Optional[float] = None
+    sic_code: Optional[str] = None
+    sic_description: Optional[str] = None
+
 
 class PolygonClient:
     """
-    Polygon.io API client with rate limiting, caching, and fixture support.
+    Async HTTP client for Polygon.io API with retry logic and Redis caching.
     
-    Automatically switches between live API and fixture data based on
-    USE_POLYGON_LIVE configuration setting.
+    Features:
+    - Exponential backoff retry (max 3 attempts)
+    - Redis caching with configurable TTL
+    - Rate limiting compliance
+    - Fixture mode for development
     """
     
-    def __init__(self, api_key: Optional[str] = None, tier: str = "basic"):
+    def __init__(self, 
+                 api_key: Optional[str] = None,
+                 base_url: str = "https://api.polygon.io",
+                 use_live: bool = False,
+                 redis_client: Optional[redis.Redis] = None):
+        
         self.api_key = api_key or settings.POLYGON_API_KEY
-        self.use_live = settings.USE_POLYGON_LIVE and bool(self.api_key)
-        self.tier = tier
+        self.base_url = base_url
+        self.use_live = use_live or settings.USE_POLYGON_LIVE
+        self.redis_client = redis_client
         
-        # Setup rate limiter
-        rate_config = RATE_LIMITS.get(tier, RATE_LIMITS["basic"])
-        self.rate_limiter = RateLimiter(rate_config["requests_per_minute"])
-        
-        # HTTP client for live API
-        self.client = httpx.AsyncClient(
-            base_url=POLYGON_BASE_URL,
-            timeout=30.0,
+        # HTTP client with timeout settings
+        self.http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(30.0),
             limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
         )
         
-        logger.info(
-            f"PolygonClient initialized - Live API: {self.use_live}, "
-            f"Tier: {tier}, Rate limit: {rate_config['requests_per_minute']}/min"
-        )
-    
-    async def close(self):
-        """Close the HTTP client"""
-        await self.client.aclose()
-    
-    def _load_fixture(self, fixture_name: str) -> Dict[str, Any]:
-        """Load fixture data from JSON file"""
-        fixture_path = FIXTURES_PATH / f"{fixture_name}.json"
+        # Rate limiting: Polygon free tier allows 5 requests per minute
+        self.rate_limit_delay = 12.0  # seconds between requests
+        self.last_request_time = 0.0
         
-        if not fixture_path.exists():
-            raise FileNotFoundError(f"Fixture not found: {fixture_path}")
-        
-        with open(fixture_path, 'r') as f:
-            return json.load(f)
+    async def __aenter__(self):
+        if self.redis_client is None and settings.REDIS_URL:
+            try:
+                self.redis_client = redis.from_url(settings.REDIS_URL)
+                await self.redis_client.ping()
+                logger.info("Connected to Redis for caching")
+            except Exception as e:
+                logger.warning(f"Redis connection failed: {e}. Operating without cache.")
+                self.redis_client = None
+        return self
     
-    @with_retries(max_retries=3, backoff_factor=1.0)
-    async def _make_request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Make authenticated request to Polygon API"""
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.http_client.aclose()
+        if self.redis_client:
+            await self.redis_client.aclose()
+    
+    async def _wait_for_rate_limit(self):
+        """Enforce rate limiting between API requests"""
         if not self.use_live:
-            raise ValueError("Live API not available - check configuration")
+            return  # No rate limiting for fixture mode
+            
+        current_time = asyncio.get_event_loop().time()
+        time_since_last = current_time - self.last_request_time
         
-        await self.rate_limiter.acquire()
+        if time_since_last < self.rate_limit_delay:
+            wait_time = self.rate_limit_delay - time_since_last
+            logger.debug(f"Rate limiting: waiting {wait_time:.1f}s")
+            await asyncio.sleep(wait_time)
         
-        # Add API key to parameters
-        params = params or {}
-        params["apikey"] = self.api_key
+        self.last_request_time = asyncio.get_event_loop().time()
+    
+    async def _get_cached(self, cache_key: str) -> Optional[Dict]:
+        """Get data from Redis cache"""
+        if not self.redis_client:
+            return None
+            
+        try:
+            cached_data = await self.redis_client.get(cache_key)
+            if cached_data:
+                return json.loads(cached_data)
+        except Exception as e:
+            logger.warning(f"Cache read error: {e}")
         
-        logger.debug(f"Making request to {endpoint} with params: {params}")
+        return None
+    
+    async def _set_cache(self, cache_key: str, data: Dict, ttl_seconds: int = 300):
+        """Set data in Redis cache with TTL"""
+        if not self.redis_client:
+            return
+            
+        try:
+            await self.redis_client.setex(
+                cache_key, 
+                ttl_seconds, 
+                json.dumps(data, default=str)
+            )
+        except Exception as e:
+            logger.warning(f"Cache write error: {e}")
+    
+    async def _make_request(self, 
+                          endpoint: str, 
+                          params: Optional[Dict] = None,
+                          max_retries: int = 3,
+                          cache_ttl: int = 300) -> Dict:
+        """
+        Make HTTP request with retry logic and caching
+        
+        Args:
+            endpoint: API endpoint path (e.g., '/v2/snapshot/locale/us/markets/stocks')
+            params: Query parameters
+            max_retries: Maximum retry attempts
+            cache_ttl: Cache TTL in seconds (300 = 5 minutes)
+        """
+        
+        # Use fixture data in development mode
+        if not self.use_live:
+            return await self._get_fixture_data(endpoint, params)
+        
+        # Build cache key
+        cache_key = f"polygon:{endpoint}:{hash(str(sorted((params or {}).items())))}"
+        
+        # Try cache first
+        cached_data = await self._get_cached(cache_key)
+        if cached_data:
+            logger.debug(f"Cache hit for {endpoint}")
+            return cached_data
+        
+        # Prepare request
+        if not self.api_key:
+            raise PolygonApiError("Polygon.io API key not configured")
+        
+        url = f"{self.base_url}{endpoint}"
+        request_params = {"apikey": self.api_key}
+        if params:
+            request_params.update(params)
+        
+        # Retry logic with exponential backoff
+        last_exception = None
+        for attempt in range(max_retries):
+            try:
+                await self._wait_for_rate_limit()
+                
+                logger.debug(f"Request attempt {attempt + 1}: {endpoint}")
+                response = await self.http_client.get(url, params=request_params)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    
+                    # Check for API-level errors
+                    if result.get("status") == "ERROR":
+                        raise PolygonApiError(
+                            result.get("error", "Unknown API error"),
+                            response.status_code,
+                            result
+                        )
+                    
+                    # Cache successful response
+                    await self._set_cache(cache_key, result, cache_ttl)
+                    logger.debug(f"Successful API call: {endpoint}")
+                    return result
+                
+                elif response.status_code == 429:
+                    # Rate limited - wait longer
+                    wait_time = 2 ** attempt * 10  # 10, 20, 40 seconds
+                    logger.warning(f"Rate limited, waiting {wait_time}s")
+                    await asyncio.sleep(wait_time)
+                    continue
+                
+                else:
+                    # Other HTTP errors
+                    error_msg = f"HTTP {response.status_code}: {response.text[:200]}"
+                    raise PolygonApiError(error_msg, response.status_code)
+                    
+            except httpx.RequestError as e:
+                last_exception = e
+                wait_time = 2 ** attempt  # 1, 2, 4 seconds
+                logger.warning(f"Request failed (attempt {attempt + 1}): {e}. Retrying in {wait_time}s")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(wait_time)
+        
+        # All retries failed
+        raise PolygonApiError(f"Request failed after {max_retries} attempts: {last_exception}")
+    
+    async def _get_fixture_data(self, endpoint: str, params: Optional[Dict] = None) -> Dict:
+        """Load fixture data for development mode"""
+        # Map endpoints to fixture files
+        fixture_map = {
+            "/v2/snapshot/locale/us/markets/stocks": "tests/fixtures/polygon/full-market-snapshot.json",
+            "/v2/snapshot/locale/us/markets/stocks/tickers": "tests/fixtures/polygon/single-ticker-snapshot.json",
+            "/v2/aggs/ticker": "tests/fixtures/polygon/aggregates-daily.json",
+        }
+        
+        fixture_file = None
+        for pattern, file_path in fixture_map.items():
+            if pattern in endpoint:
+                fixture_file = file_path
+                break
+        
+        if not fixture_file:
+            logger.warning(f"No fixture found for endpoint: {endpoint}")
+            return {"status": "OK", "results": []}
         
         try:
-            response = await self.client.get(endpoint, params=params)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # Check for API-level errors
-            if data.get("status") == "ERROR":
-                error_msg = data.get("error", "Unknown API error")
-                raise PolygonAPIError(
-                    status_code=response.status_code,
-                    message=error_msg,
-                    response_data=data
-                )
-            
-            return data
-            
-        except httpx.HTTPStatusError as e:
-            error_data = {}
-            try:
-                error_data = e.response.json()
-            except:
-                pass
-                
-            raise PolygonAPIError(
-                status_code=e.response.status_code,
-                message=f"HTTP {e.response.status_code}: {e.response.text}",
-                response_data=error_data
-            )
-        
-        except httpx.RequestError as e:
-            raise PolygonAPIError(
-                status_code=0,
-                message=f"Request failed: {str(e)}"
-            )
+            with open(fixture_file, 'r') as f:
+                data = json.load(f)
+                logger.debug(f"Loaded fixture data from {fixture_file}")
+                return data
+        except FileNotFoundError:
+            logger.warning(f"Fixture file not found: {fixture_file}")
+            return {"status": "OK", "results": []}
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in fixture file {fixture_file}: {e}")
+            return {"status": "OK", "results": []}
     
-    async def get_full_market_snapshot(self) -> Dict[str, Any]:
+    # Public API methods
+    
+    async def get_full_market_snapshot(self) -> List[MarketSnapshot]:
         """
-        Get current market data for all US stock tickers.
+        Get full market snapshot for all US stocks
         
         Returns:
-            Full market snapshot with all tickers and their current data
+            List of MarketSnapshot objects with current market data
         """
-        if not self.use_live:
-            logger.info("Using fixture data for full market snapshot")
-            return self._load_fixture("full-market-snapshot")
+        endpoint = "/v2/snapshot/locale/us/markets/stocks"
         
-        return await self._make_request(
-            "/v2/snapshot/locale/us/markets/stocks/tickers",
-            params={"include_otc": "false"}
-        )
+        try:
+            result = await self._make_request(endpoint, cache_ttl=300)  # 5-minute cache
+            
+            snapshots = []
+            for item in result.get("results", []):
+                try:
+                    snapshot = MarketSnapshot(**item)
+                    snapshots.append(snapshot)
+                except Exception as e:
+                    logger.warning(f"Failed to parse snapshot for {item.get('ticker', 'unknown')}: {e}")
+            
+            logger.info(f"Retrieved {len(snapshots)} market snapshots")
+            return snapshots
+            
+        except Exception as e:
+            logger.error(f"Failed to get market snapshot: {e}")
+            raise PolygonApiError(f"Market snapshot request failed: {e}")
     
-    async def get_single_ticker_snapshot(self, ticker: str) -> Dict[str, Any]:
+    async def get_single_ticker_snapshot(self, ticker: str) -> Optional[MarketSnapshot]:
         """
-        Get current market data for a specific ticker.
+        Get snapshot data for a single ticker
         
         Args:
             ticker: Stock symbol (e.g., 'AAPL')
             
         Returns:
-            Single ticker snapshot data
+            MarketSnapshot object or None if not found
         """
-        ticker = ticker.upper()
+        endpoint = f"/v2/snapshot/locale/us/markets/stocks/tickers/{ticker.upper()}"
         
-        if not self.use_live:
-            logger.info(f"Using fixture data for {ticker} snapshot")
-            fixture_data = self._load_fixture("single-ticker-snapshot")
-            # Modify fixture to match requested ticker
-            fixture_data["results"]["ticker"] = ticker
-            return fixture_data
-        
-        return await self._make_request(
-            f"/v2/snapshot/locale/us/markets/stocks/tickers/{ticker}"
-        )
+        try:
+            result = await self._make_request(endpoint, cache_ttl=120)  # 2-minute cache
+            
+            results = result.get("results")
+            if not results:
+                logger.warning(f"No data found for ticker {ticker}")
+                return None
+            
+            snapshot = MarketSnapshot(**results)
+            logger.debug(f"Retrieved snapshot for {ticker}")
+            return snapshot
+            
+        except Exception as e:
+            logger.error(f"Failed to get snapshot for {ticker}: {e}")
+            raise PolygonApiError(f"Single ticker snapshot failed: {e}")
     
-    async def get_aggregates(
-        self,
-        ticker: str,
-        multiplier: int = 1,
-        timespan: str = "day",
-        from_date: str = None,
-        to_date: str = None,
-        adjusted: bool = True,
-        sort: str = "asc",
-        limit: int = 5000
-    ) -> Dict[str, Any]:
+    async def get_aggregates(self, 
+                           ticker: str,
+                           multiplier: int = 1,
+                           timespan: str = "day",
+                           from_date: str = None,
+                           to_date: str = None,
+                           limit: int = 5000) -> List[AggregateBar]:
         """
-        Get historical aggregate bars for a ticker.
+        Get aggregate OHLCV bars for a ticker
         
         Args:
             ticker: Stock symbol
-            multiplier: Size of timespan multiplier
-            timespan: Timespan of bars (minute, hour, day, week, month, quarter, year)
+            multiplier: Size of timespan multiplier (e.g., 1 for 1 day)
+            timespan: Size of time window (minute, hour, day, week, month, quarter, year)
             from_date: Start date (YYYY-MM-DD)
             to_date: End date (YYYY-MM-DD)
-            adjusted: Adjust for splits
-            sort: Sort order (asc or desc)
-            limit: Max results
+            limit: Maximum number of results
             
         Returns:
-            Historical aggregate data
+            List of AggregateBar objects
         """
-        ticker = ticker.upper()
         
-        # Default date range (last 5 days)
+        # Default to last 100 days if no dates provided
         if not from_date or not to_date:
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=5)
-            from_date = start_date.strftime("%Y-%m-%d")
-            to_date = end_date.strftime("%Y-%m-%d")
+            to_date = datetime.now().strftime("%Y-%m-%d")
+            from_date = (datetime.now() - timedelta(days=100)).strftime("%Y-%m-%d")
         
-        if not self.use_live:
-            logger.info(f"Using fixture data for {ticker} aggregates")
-            fixture_data = self._load_fixture("aggregates-daily")
-            # Modify fixture to match requested ticker
-            fixture_data["ticker"] = ticker
-            return fixture_data
+        endpoint = f"/v2/aggs/ticker/{ticker.upper()}/range/{multiplier}/{timespan}/{from_date}/{to_date}"
+        params = {"limit": limit, "sort": "asc"}
         
-        endpoint = f"/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from_date}/{to_date}"
-        params = {
-            "adjusted": str(adjusted).lower(),
-            "sort": sort,
-            "limit": limit
-        }
-        
-        return await self._make_request(endpoint, params)
+        try:
+            result = await self._make_request(endpoint, params, cache_ttl=3600)  # 1-hour cache
+            
+            bars = []
+            for item in result.get("results", []):
+                try:
+                    bar = AggregateBar(**item)
+                    bars.append(bar)
+                except Exception as e:
+                    logger.warning(f"Failed to parse bar data: {e}")
+            
+            logger.debug(f"Retrieved {len(bars)} bars for {ticker}")
+            return bars
+            
+        except Exception as e:
+            logger.error(f"Failed to get aggregates for {ticker}: {e}")
+            raise PolygonApiError(f"Aggregates request failed: {e}")
     
-    async def get_ticker_overview(self, ticker: str) -> Dict[str, Any]:
+    async def get_ticker_overview(self, ticker: str) -> Optional[TickerOverview]:
         """
-        Get detailed information about a ticker.
+        Get ticker overview/details
         
         Args:
             ticker: Stock symbol
             
         Returns:
-            Ticker overview with company information
+            TickerOverview object or None if not found
         """
-        ticker = ticker.upper()
+        endpoint = f"/v3/reference/tickers/{ticker.upper()}"
         
-        if not self.use_live:
-            logger.info(f"Using mock data for {ticker} overview")
-            # Generate mock ticker overview
-            return {
-                "status": "OK",
-                "results": {
-                    "ticker": ticker,
-                    "name": f"{ticker} Inc.",
-                    "market": "stocks",
-                    "locale": "us",
-                    "primary_exchange": "XNAS",
-                    "type": "CS",
-                    "active": True,
-                    "currency_name": "usd",
-                    "market_cap": 2800000000000 if ticker == "AAPL" else 1000000000000,
-                    "description": f"Mock description for {ticker}",
-                    "list_date": "1980-12-12",
-                    "total_employees": 164000 if ticker == "AAPL" else 50000
-                }
-            }
-        
-        return await self._make_request(f"/v3/reference/tickers/{ticker}")
-    
-    async def get_market_status(self) -> Dict[str, Any]:
-        """
-        Get current market status.
-        
-        Returns:
-            Market status information
-        """
-        if not self.use_live:
-            # Mock market status
-            now = datetime.now()
-            hour = now.hour
+        try:
+            result = await self._make_request(endpoint, cache_ttl=86400)  # 24-hour cache
             
-            # Simple market hours simulation (9:30 AM - 4:00 PM ET)
-            if 9 <= hour < 16:
-                market_status = "open"
-            elif 4 <= hour < 9:
-                market_status = "early_hours"
-            elif 16 <= hour < 20:
-                market_status = "late_hours"
-            else:
-                market_status = "closed"
+            results = result.get("results")
+            if not results:
+                logger.warning(f"No overview data found for ticker {ticker}")
+                return None
             
-            return {
-                "status": "OK",
-                "results": {
-                    "market": "stocks",
-                    "serverTime": now.isoformat(),
-                    "exchanges": {
-                        "nasdaq": market_status,
-                        "nyse": market_status,
-                    }
-                }
-            }
-        
-        return await self._make_request("/v1/marketstatus/now")
+            overview = TickerOverview(**results)
+            logger.debug(f"Retrieved overview for {ticker}")
+            return overview
+            
+        except Exception as e:
+            logger.error(f"Failed to get overview for {ticker}: {e}")
+            raise PolygonApiError(f"Ticker overview request failed: {e}")
 
-# Global client instance
-_client_instance: Optional[PolygonClient] = None
 
-def get_polygon_client() -> PolygonClient:
-    """Get the global Polygon client instance"""
-    global _client_instance
-    
-    if _client_instance is None:
-        _client_instance = PolygonClient()
-    
-    return _client_instance
+# Global client instance - will be initialized on first use
+_polygon_client: Optional[PolygonClient] = None
 
-async def close_polygon_client():
-    """Close the global Polygon client"""
-    global _client_instance
-    
-    if _client_instance:
-        await _client_instance.close()
-        _client_instance = None
 
-# Convenience functions for common operations
-async def get_tickers_snapshot(tickers: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-    """
-    Get snapshots for specific tickers or all tickers.
+async def get_polygon_client() -> PolygonClient:
+    """Get or create the global Polygon.io client instance"""
+    global _polygon_client
     
-    Args:
-        tickers: List of ticker symbols, or None for all tickers
-        
-    Returns:
-        List of ticker snapshots
-    """
-    client = get_polygon_client()
+    if _polygon_client is None:
+        _polygon_client = PolygonClient()
+        await _polygon_client.__aenter__()
     
-    if tickers:
-        # Get individual ticker snapshots
-        results = []
-        for ticker in tickers:
-            snapshot = await client.get_single_ticker_snapshot(ticker)
-            if snapshot.get("results"):
-                results.append(snapshot["results"])
-        return results
-    else:
-        # Get full market snapshot
-        snapshot = await client.get_full_market_snapshot()
-        return snapshot.get("results", [])
+    return _polygon_client
 
-async def get_liquid_universe(min_volume: int = 1000000, min_price: float = 5.0) -> List[str]:
-    """
-    Get list of liquid stock tickers based on volume and price criteria.
-    
-    Args:
-        min_volume: Minimum daily volume
-        min_price: Minimum stock price
-        
-    Returns:
-        List of liquid ticker symbols
-    """
-    snapshots = await get_tickers_snapshot()
-    
-    liquid_tickers = []
-    for snapshot in snapshots:
-        day_data = snapshot.get("day", {})
-        volume = day_data.get("v", 0)
-        price = day_data.get("c", 0)
-        
-        if volume >= min_volume and price >= min_price:
-            liquid_tickers.append(snapshot["ticker"])
-    
-    return liquid_tickers[:500]  # Limit to top 500 for performance
 
-# Market hours utilities
-def is_market_open() -> bool:
-    """
-    Check if the market is currently open (simplified version).
-    
-    Returns:
-        True if market is open, False otherwise
-    """
-    now = datetime.now()
-    hour = now.hour
-    weekday = now.weekday()
-    
-    # Weekend
-    if weekday >= 5:
-        return False
-    
-    # Regular market hours: 9:30 AM - 4:00 PM ET (simplified)
-    return 9 <= hour < 16
+# Convenience functions for quick access
+async def get_market_snapshot() -> List[MarketSnapshot]:
+    """Get full market snapshot - convenience function"""
+    client = await get_polygon_client()
+    return await client.get_full_market_snapshot()
 
-def get_next_market_open() -> datetime:
-    """
-    Get the next market open time.
-    
-    Returns:
-        Datetime of next market open
-    """
-    now = datetime.now()
-    
-    # Simple logic: next weekday at 9:30 AM
-    next_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
-    
-    # If it's past market hours today, go to tomorrow
-    if now.hour >= 16:
-        next_open += timedelta(days=1)
-    
-    # Skip weekends
-    while next_open.weekday() >= 5:
-        next_open += timedelta(days=1)
-    
-    return next_open
+
+async def get_ticker_snapshot(ticker: str) -> Optional[MarketSnapshot]:
+    """Get single ticker snapshot - convenience function"""
+    client = await get_polygon_client()
+    return await client.get_single_ticker_snapshot(ticker)
+
+
+async def get_ticker_bars(ticker: str, days: int = 100) -> List[AggregateBar]:
+    """Get daily bars for ticker - convenience function"""
+    client = await get_polygon_client()
+    to_date = datetime.now().strftime("%Y-%m-%d")
+    from_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    return await client.get_aggregates(ticker, from_date=from_date, to_date=to_date)

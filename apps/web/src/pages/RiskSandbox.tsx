@@ -299,7 +299,15 @@ function RiskSandbox() {
                   Simulation Results
                 </h3>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                {/* Key Performance Metrics */}
+                <div 
+                  style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
+                    gap: '1rem',
+                    marginBottom: '2rem'
+                  }}
+                >
                   <div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                       Mean Final Equity
@@ -311,28 +319,254 @@ function RiskSandbox() {
                   
                   <div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                      P(2× or better)
+                      Median Final Equity
                     </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
-                      {(results.risk_metrics.prob_2x * 100).toFixed(1)}%
+                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                      ${results.median_final_equity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </div>
                   </div>
-                  
+
                   <div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                      P95 Max Drawdown
+                      Expected Return
                     </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-danger)' }}>
-                      {(results.risk_metrics.p95_max_drawdown * 100).toFixed(1)}%
+                    <div style={{ 
+                      fontSize: '1.25rem', 
+                      fontWeight: 'bold', 
+                      color: results.mean_final_equity > results.parameters.starting_capital 
+                        ? 'var(--color-success)' 
+                        : 'var(--color-danger)' 
+                    }}>
+                      {(((results.mean_final_equity - results.parameters.starting_capital) / results.parameters.starting_capital) * 100).toFixed(1)}%
                     </div>
                   </div>
-                  
+
                   <div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                       Sharpe Ratio
                     </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-info)' }}>
+                    <div style={{ 
+                      fontSize: '1.25rem', 
+                      fontWeight: 'bold', 
+                      color: results.risk_metrics.sharpe_ratio > 1 ? 'var(--color-success)' : 'var(--color-info)'
+                    }}>
                       {results.risk_metrics.sharpe_ratio.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Probability Metrics */}
+                <div style={{ marginBottom: '2rem' }}>
+                  <h4 style={{ 
+                    margin: '0 0 1rem 0', 
+                    fontSize: '1.1rem', 
+                    color: 'var(--color-text-secondary)',
+                    borderBottom: '2px solid var(--color-border)',
+                    paddingBottom: '0.5rem'
+                  }}>
+                    📊 Probability Analysis
+                  </h4>
+                  <div 
+                    style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
+                      gap: '1rem'
+                    }}
+                  >
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: 'var(--color-success-light, #f0f9f0)', 
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-success, #4caf50)'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>
+                        P(≥2× Return)
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                        {(results.risk_metrics.prob_2x * 100).toFixed(1)}%
+                      </div>
+                    </div>
+
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: 'var(--color-success-light, #f0f9f0)', 
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-success, #4caf50)'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>
+                        P(≥3× Return)
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                        {(results.risk_metrics.prob_3x * 100).toFixed(1)}%
+                      </div>
+                    </div>
+
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: 'var(--color-danger-light, #fff5f5)', 
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-danger, #f44336)'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-danger)' }}>
+                        P(Loss)
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-danger)' }}>
+                        {(results.risk_metrics.prob_loss * 100).toFixed(1)}%
+                      </div>
+                    </div>
+
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: 'var(--color-info-light, #f0f8ff)', 
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-info, #2196f3)'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-info)' }}>
+                        Win Rate
+                      </div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-info)' }}>
+                        {(results.risk_metrics.win_rate * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Risk Metrics */}
+                <div style={{ marginBottom: '2rem' }}>
+                  <h4 style={{ 
+                    margin: '0 0 1rem 0', 
+                    fontSize: '1.1rem', 
+                    color: 'var(--color-text-secondary)',
+                    borderBottom: '2px solid var(--color-border)',
+                    paddingBottom: '0.5rem'
+                  }}>
+                    ⚠️ Risk Analysis
+                  </h4>
+                  <div 
+                    style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
+                      gap: '1rem'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        P95 Max Drawdown
+                      </div>
+                      <div style={{ 
+                        fontSize: '1.25rem', 
+                        fontWeight: 'bold', 
+                        color: results.risk_metrics.p95_max_drawdown > 0.2 ? 'var(--color-danger)' : 'var(--color-warning, #ff9800)' 
+                      }}>
+                        {(results.risk_metrics.p95_max_drawdown * 100).toFixed(1)}%
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        VaR 95%
+                      </div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-danger)' }}>
+                        ${Math.abs(results.risk_metrics.var_95).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        CVaR 95%
+                      </div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-danger)' }}>
+                        ${Math.abs(results.risk_metrics.cvar_95).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        Profit Factor
+                      </div>
+                      <div style={{ 
+                        fontSize: '1.25rem', 
+                        fontWeight: 'bold', 
+                        color: results.risk_metrics.profit_factor > 1.5 ? 'var(--color-success)' : 'var(--color-warning, #ff9800)' 
+                      }}>
+                        {results.risk_metrics.profit_factor.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Promotion Gates Status */}
+                <div style={{ marginBottom: '2rem' }}>
+                  <h4 style={{ 
+                    margin: '0 0 1rem 0', 
+                    fontSize: '1.1rem', 
+                    color: 'var(--color-text-secondary)',
+                    borderBottom: '2px solid var(--color-border)',
+                    paddingBottom: '0.5rem'
+                  }}>
+                    🚀 Promotion Gates (Go-Live Readiness)
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.5rem',
+                      padding: '0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: results.risk_metrics.prob_2x > 0.4 ? 'var(--color-success-light, #f0f9f0)' : 'var(--color-danger-light, #fff5f5)'
+                    }}>
+                      <span style={{ fontSize: '1.2rem' }}>
+                        {results.risk_metrics.prob_2x > 0.4 ? '✅' : '❌'}
+                      </span>
+                      <span style={{ fontSize: '0.9rem' }}>
+                        Monte Carlo Gate: P(≥2×) &gt; 40% 
+                        <strong>({(results.risk_metrics.prob_2x * 100).toFixed(1)}%)</strong>
+                      </span>
+                    </div>
+
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.5rem',
+                      padding: '0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: results.risk_metrics.p95_max_drawdown < 0.2 ? 'var(--color-success-light, #f0f9f0)' : 'var(--color-danger-light, #fff5f5)'
+                    }}>
+                      <span style={{ fontSize: '1.2rem' }}>
+                        {results.risk_metrics.p95_max_drawdown < 0.2 ? '✅' : '❌'}
+                      </span>
+                      <span style={{ fontSize: '0.9rem' }}>
+                        Drawdown Gate: P95 Max DD &lt; 20% 
+                        <strong>({(results.risk_metrics.p95_max_drawdown * 100).toFixed(1)}%)</strong>
+                      </span>
+                    </div>
+
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.5rem',
+                      padding: '0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: 'var(--color-warning-light, #fffbf0)'
+                    }}>
+                      <span style={{ fontSize: '1.2rem' }}>⏳</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--color-warning)' }}>
+                        Calibration Gate: Requires live signal history (≥300 trades)
+                      </span>
+                    </div>
+
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.5rem',
+                      padding: '0.5rem',
+                      borderRadius: '4px',
+                      backgroundColor: 'var(--color-warning-light, #fffbf0)'
+                    }}>
+                      <span style={{ fontSize: '1.2rem' }}>⏳</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--color-warning)' }}>
+                        Expectancy Gate: Net expected R &gt; +0.1R/trade (out-of-sample)
+                      </span>
                     </div>
                   </div>
                 </div>

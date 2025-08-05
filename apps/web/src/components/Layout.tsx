@@ -58,6 +58,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 Risk Sandbox
               </Link>
+              <Link
+                to="/api-test"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/api-test') 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                🧪 API Test
+              </Link>
             </nav>
           </div>
         </div>

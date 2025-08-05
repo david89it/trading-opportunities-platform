@@ -1,23 +1,77 @@
 import { OpportunitiesResponse, Opportunity } from '@alpha-scanner/shared';
+import { mockApi } from './mockApi';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true' || true; // Default to mock for development
 
 const api = {
-  getOpportunities: async (): Promise<OpportunitiesResponse> => {
-    const response = await fetch(`${API_BASE_URL}/opportunities`);
+  getOpportunities: async (params?: {
+    limit?: number;
+    offset?: number;
+    min_score?: number;
+    status?: string;
+  }): Promise<OpportunitiesResponse> => {
+    if (USE_MOCK_API) {
+      return mockApi.getOpportunities(params);
+    }
+    
+    const url = new URL(`${API_BASE_URL}/opportunities`, window.location.origin);
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          url.searchParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const response = await fetch(url.toString());
     if (!response.ok) {
       throw new Error('Failed to fetch opportunities');
     }
     return response.json();
   },
+  
   getOpportunity: async (symbol: string): Promise<Opportunity> => {
+    if (USE_MOCK_API) {
+      return mockApi.getOpportunity(symbol);
+    }
+    
     const response = await fetch(`${API_BASE_URL}/opportunities/${symbol}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch opportunity for ${symbol}`);
     }
     return response.json();
   },
+  
+  scanPreview: async (params?: {
+    limit?: number;
+    min_score?: number;
+  }): Promise<OpportunitiesResponse> => {
+    if (USE_MOCK_API) {
+      return mockApi.scanPreview(params);
+    }
+    
+    const url = new URL(`${API_BASE_URL}/scan/preview`, window.location.origin);
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          url.searchParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const response = await fetch(url.toString(), { method: 'POST' });
+    if (!response.ok) {
+      throw new Error('Failed to run scan preview');
+    }
+    return response.json();
+  },
+  
   getHealth: async (): Promise<any> => {
+    if (USE_MOCK_API) {
+      return mockApi.getHealth();
+    }
+    
     const response = await fetch(`${API_BASE_URL}/health`);
     if (!response.ok) {
       throw new Error('Failed to fetch health status');

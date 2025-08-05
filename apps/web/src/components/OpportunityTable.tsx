@@ -26,12 +26,12 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
 
   const getGuardrailBadge = (status: string, reason?: string) => {
     const styles = {
-      allowed: { backgroundColor: 'var(--color-success)', color: 'white' },
-      warning: { backgroundColor: 'var(--color-warning)', color: 'black' },
+      approved: { backgroundColor: 'var(--color-success)', color: 'white' },
+      review: { backgroundColor: 'var(--color-warning)', color: 'black' },
       blocked: { backgroundColor: 'var(--color-danger)', color: 'white' },
     }
 
-    const style = styles[status as keyof typeof styles] || styles.allowed
+    const style = styles[status as keyof typeof styles] || styles.approved
 
     return (
       <span
@@ -49,10 +49,10 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
     )
   }
 
-  const getScoreBar = (score: number, maxScore = 100) => {
+  const getScoreBar = (score: number, maxScore = 10) => {
     const percentage = (score / maxScore) * 100
-    const color = score >= 80 ? 'var(--color-success)' : 
-                  score >= 60 ? 'var(--color-warning)' : 
+    const color = score >= 8 ? 'var(--color-success)' : 
+                  score >= 6 ? 'var(--color-warning)' : 
                   'var(--color-danger)'
 
     return (
@@ -210,7 +210,7 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
               </td>
               
               <td style={{ padding: '1rem', textAlign: 'center' }}>
-                {getGuardrailBadge(opportunity.guardrail_status || 'allowed', opportunity.guardrail_reason)}
+                {getGuardrailBadge(opportunity.guardrail_status, opportunity.guardrail_reason)}
               </td>
               
               <td style={{ padding: '1rem', textAlign: 'center' }}>
