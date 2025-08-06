@@ -22,7 +22,7 @@ import logging
 from app.models.opportunities import (
     Opportunity, FeatureScores, TradeSetup, GuardrailStatus
 )
-from app.services.polygon_client import get_polygon_client, get_tickers_snapshot
+from app.services.polygon_client import get_polygon_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -274,6 +274,11 @@ def compute_features(bars: List[Dict[str, Any]], snapshot: Dict[str, Any],
         "vwap_distance_pct": (current_price - current_vwap) / current_vwap,
         "above_vwap": current_price > current_vwap,
         
+        # Pivot point analysis
+        "pivot_high": _find_pivot_high(highs, closes),
+        "pivot_low": _find_pivot_low(lows, closes),
+        "pivot_proximity_score": _calculate_pivot_proximity_score(current_price, highs, lows, closes),
+        
         # Price action
         "daily_range_pct": ((highs[-1] - lows[-1]) / closes[-1]) * 100,
         "gap_vs_prev": (opens[-1] - closes[-2]) / closes[-2] if len(closes) > 1 else 0,
@@ -314,6 +319,102 @@ def _calculate_spread_bps(snapshot: Dict[str, Any]) -> float:
         return 50.0
     
     return (spread / mid_price) * 10000  # Convert to basis points
+
+def _find_pivot_high(highs: List[float], closes: List[float], window: int = 10) -> Optional[float]:
+    """Find recent pivot high level"""
+    if len(highs) < window * 2:
+        return None
+    
+    # Look at recent data for pivot detection
+    recent_highs = highs[-window*3:]
+    
+    # Find local maxima (pivot highs)
+    pivot_highs = []
+    for i in range(window, len(recent_highs) - window):
+        current = recent_highs[i]
+        is_pivot = True
+        
+        # Check if current value is highest in the window
+        for j in range(i - window, i + window + 1):
+            if j != i and recent_highs[j] >= current:
+                is_pivot = False
+                break
+        
+        if is_pivot:
+            pivot_highs.append(current)
+    
+    return max(pivot_highs) if pivot_highs else None
+
+def _find_pivot_low(lows: List[float], closes: List[float], window: int = 10) -> Optional[float]:
+    """Find recent pivot low level"""
+    if len(lows) < window * 2:
+        return None
+    
+    # Look at recent data for pivot detection
+    recent_lows = lows[-window*3:]
+    
+    # Find local minima (pivot lows)
+    pivot_lows = []
+    for i in range(window, len(recent_lows) - window):
+        current = recent_lows[i]
+        is_pivot = True
+        
+        # Check if current value is lowest in the window
+        for j in range(i - window, i + window + 1):
+            if j != i and recent_lows[j] <= current:
+                is_pivot = False
+                break
+        
+        if is_pivot:
+            pivot_lows.append(current)
+    
+    return min(pivot_lows) if pivot_lows else None
+
+def _calculate_pivot_proximity_score(current_price: float, highs: List[float], 
+                                   lows: List[float], closes: List[float]) -> float:
+    """
+    Calculate proximity score to key pivot levels (0-10 scale).
+    Higher score = closer to significant support/resistance levels
+    """
+    pivot_high = _find_pivot_high(highs, closes)
+    pivot_low = _find_pivot_low(lows, closes)
+    
+    if not pivot_high and not pivot_low:
+        return 0.0
+    
+    scores = []
+    
+    # Distance to pivot high (resistance)
+    if pivot_high:
+        high_distance_pct = abs(current_price - pivot_high) / pivot_high
+        # Closer to pivot = higher score (within 2% gets max score)
+        if high_distance_pct <= 0.005:  # Within 0.5%
+            scores.append(10.0)
+        elif high_distance_pct <= 0.01:  # Within 1%
+            scores.append(8.0)
+        elif high_distance_pct <= 0.02:  # Within 2%
+            scores.append(6.0)
+        elif high_distance_pct <= 0.05:  # Within 5%
+            scores.append(3.0)
+        else:
+            scores.append(0.0)
+    
+    # Distance to pivot low (support)
+    if pivot_low:
+        low_distance_pct = abs(current_price - pivot_low) / pivot_low
+        # Closer to pivot = higher score
+        if low_distance_pct <= 0.005:  # Within 0.5%
+            scores.append(10.0)
+        elif low_distance_pct <= 0.01:  # Within 1%
+            scores.append(8.0)
+        elif low_distance_pct <= 0.02:  # Within 2%
+            scores.append(6.0)  
+        elif low_distance_pct <= 0.05:  # Within 5%
+            scores.append(3.0)
+        else:
+            scores.append(0.0)
+    
+    return max(scores) if scores else 0.0
 
 def score_features(features: Dict[str, Any]) -> FeatureScores:
     """
@@ -365,14 +466,18 @@ def score_features(features: Dict[str, Any]) -> FeatureScores:
     elif rvol < 0.5:  # Very low volume
         volume_score += 0.5
     
-    # VWAP position (40% of volume score)
+    # VWAP position (30% of volume score)
     vwap_distance = features["vwap_distance_pct"]
     if features["above_vwap"] and abs(vwap_distance) < 0.01:  # Close to VWAP
-        volume_score += 4.0
-    elif features["above_vwap"]:  # Above VWAP
-        volume_score += 2.0
-    elif abs(vwap_distance) < 0.005:  # Very close to VWAP
         volume_score += 3.0
+    elif features["above_vwap"]:  # Above VWAP
+        volume_score += 1.5
+    elif abs(vwap_distance) < 0.005:  # Very close to VWAP
+        volume_score += 2.0
+    
+    # Pivot proximity (10% of volume score) - adds confluence
+    pivot_score = features.get("pivot_proximity_score", 0)
+    volume_score += (pivot_score / 10.0) * 1.0  # Scale to 1.0 max contribution
     
     # Volatility Score
     volatility_score = 0.0
@@ -397,10 +502,23 @@ def score_features(features: Dict[str, Any]) -> FeatureScores:
     elif spread_bps <= 50:  # Wide spread
         volatility_score += 1.0
     
+    # Normalize scores to 0-100 scale (currently 0-10)
+    price_final = min(100.0, max(0.0, price_score * 10))
+    volume_final = min(100.0, max(0.0, volume_score * 10))
+    volatility_final = min(100.0, max(0.0, volatility_score * 10))
+    
+    # Calculate overall weighted score
+    overall_score = (
+        price_final * SCORE_WEIGHTS["trend_alignment"] +
+        volume_final * SCORE_WEIGHTS["volume"] + 
+        volatility_final * SCORE_WEIGHTS["volatility"]
+    ) / sum(SCORE_WEIGHTS.values())
+    
     return FeatureScores(
-        price_score=min(10.0, max(0.0, price_score)),
-        volume_score=min(10.0, max(0.0, volume_score)),
-        volatility_score=min(10.0, max(0.0, volatility_score))
+        price=price_final,
+        volume=volume_final,
+        volatility=volatility_final,
+        overall=overall_score
     )
 
 def position_sizing(entry_price: float, stop_price: float, 
@@ -611,7 +729,8 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
     
     try:
         # Get market snapshots for liquid universe
-        snapshots = await get_tickers_snapshot()
+        client = await get_polygon_client()
+        snapshots = await client.get_full_market_snapshot()
         
         # Filter for liquid stocks
         liquid_snapshots = []
@@ -627,7 +746,6 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
         logger.info(f"Found {len(liquid_snapshots)} liquid stocks to analyze")
         
         opportunities = []
-        client = get_polygon_client()
         
         # Analyze each liquid stock
         for snapshot in liquid_snapshots[:limit * 2]:  # Analyze more than limit to get best
