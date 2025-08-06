@@ -28,7 +28,7 @@ async def get_scanner_enabled() -> bool:
 async def get_opportunities(
     limit: int = Query(50, ge=1, le=500, description="Number of opportunities to return"),
     offset: int = Query(0, ge=0, description="Number of opportunities to skip"),
-    min_score: Optional[float] = Query(None, ge=0, le=10, description="Minimum signal score"),
+    min_score: Optional[float] = Query(None, ge=0, le=100, description="Minimum signal score (0-100 scale)"),
     status: Optional[str] = Query(None, description="Filter by guardrail status"),
     scanner_enabled: bool = Depends(get_scanner_enabled)
 ):
@@ -136,7 +136,7 @@ async def get_opportunity_by_symbol(
 @router.post("/scan/preview", response_model=OpportunitiesResponse)
 async def scan_preview(
     limit: int = Query(20, ge=1, le=100, description="Number of top opportunities to return"),
-    min_score: float = Query(6.0, ge=0, le=10, description="Minimum signal score threshold"),
+    min_score: float = Query(60.0, ge=0, le=100, description="Minimum signal score threshold (0-100 scale)"),
     scanner_enabled: bool = Depends(get_scanner_enabled)
 ):
     """

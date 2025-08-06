@@ -1,0 +1,107 @@
+2025-08-05T07:31:01.937077Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/daemon")}
+2025-08-05T07:31:01.938539Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:31:02.013251Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/daemon/ce1561b9e59f0577-turbo.log.2025-08-04"), AnchoredSystemPathBuf(".turbo/daemon/ce1561b9e59f0577-turbo.log.2025-08-05")}
+2025-08-05T07:31:02.013272Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:40:55.283367Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T07:40:55.286029Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:44:28.882497Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T07:44:28.883538Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:49:04.776971Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/vite.config.ts.timestamp-1754380144704-847971313bb93.mjs")}
+2025-08-05T07:49:04.777763Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:49:05.028149Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T07:49:05.028224Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/vite.config.ts.timestamp-1754380144704-847971313bb93.mjs")}
+2025-08-05T07:49:05.028228Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:49:05.028265Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T07:50:59.967184Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/vite.config.ts.timestamp-1754380259851-f1a6f89af658c.mjs")}
+2025-08-05T07:50:59.967237Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:51:00.182726Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T07:51:01.066267Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/dist/index.html"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/index-S9-H0aka.css"), AnchoredSystemPathBuf("apps/web/dist/assets/index-Bm2wY8Nc.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/router-C904bek1.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js"), AnchoredSystemPathBuf("apps/web/dist/assets"), AnchoredSystemPathBuf("apps/web/dist/assets/query-BtrgYBZj.js"), AnchoredSystemPathBuf("apps/web/dist/assets/router-C904bek1.js"), AnchoredSystemPathBuf("apps/web/dist/assets/index-Bm2wY8Nc.js"), AnchoredSystemPathBuf("apps/web/dist/assets/query-BtrgYBZj.js.map")}
+2025-08-05T07:51:01.066277Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:51:01.465316Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/dist/assets/query-BKOrCa5C.js"), AnchoredSystemPathBuf("apps/web/dist/assets"), AnchoredSystemPathBuf("apps/web/dist/assets/query-BKOrCa5C.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/index-DFkpDrq-.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/router-BoStund0.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/index-DFkpDrq-.js"), AnchoredSystemPathBuf("apps/web/dist/index.html"), AnchoredSystemPathBuf("apps/web/dist/assets/index-CycAXZAP.css"), AnchoredSystemPathBuf("apps/web/dist/assets/router-BoStund0.js"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js")}
+2025-08-05T07:51:01.465328Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:51:16.366036Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T07:51:16.366354Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:51:21.264951Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T07:51:21.264973Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:52:25.564100Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/pages/RiskSandbox.tsx")}
+2025-08-05T07:52:25.564127Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:52:51.564850Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T07:52:51.564908Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:52:55.866158Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T07:52:55.866184Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:53:00.163567Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T07:53:00.163588Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T07:57:11.770855Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/pages/RiskSandbox.tsx")}
+2025-08-05T07:57:11.771889Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:57:17.061415Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/pages/RiskSandbox.tsx")}
+2025-08-05T07:57:17.061428Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:57:21.560923Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/pages/RiskSandbox.tsx")}
+2025-08-05T07:57:21.560961Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:58:05.760841Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/vite.config.ts.timestamp-1754380685712-7996380483c4a8.mjs")}
+2025-08-05T07:58:05.760892Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:58:05.828325Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T07:58:05.860528Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/vite.config.ts.timestamp-1754380685712-7996380483c4a8.mjs")}
+2025-08-05T07:58:05.860544Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:58:05.860569Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T07:58:06.960443Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/dist/index.html"), AnchoredSystemPathBuf("apps/web/dist/assets/index-DFkpDrq-.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/query-BKOrCa5C.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets"), AnchoredSystemPathBuf("apps/web/dist/assets/index-DFkpDrq-.js"), AnchoredSystemPathBuf("apps/web/dist/assets/router-BoStund0.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/query-BKOrCa5C.js"), AnchoredSystemPathBuf("apps/web/dist/assets/index-CycAXZAP.css"), AnchoredSystemPathBuf("apps/web/dist/assets/router-BoStund0.js"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js.map")}
+2025-08-05T07:58:06.960466Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:58:07.359591Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/dist/assets/router-BoStund0.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/query-BKOrCa5C.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets"), AnchoredSystemPathBuf("apps/web/dist/assets/index-BNtI7ITx.js"), AnchoredSystemPathBuf("apps/web/dist/assets/router-BoStund0.js"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/vendor-Gm9i_4Ku.js"), AnchoredSystemPathBuf("apps/web/dist/index.html"), AnchoredSystemPathBuf("apps/web/dist/assets/index-CycAXZAP.css"), AnchoredSystemPathBuf("apps/web/dist/assets/index-BNtI7ITx.js.map"), AnchoredSystemPathBuf("apps/web/dist/assets/query-BKOrCa5C.js")}
+2025-08-05T07:58:07.359611Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:58:30.163805Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/web/src/pages/RiskSandbox.tsx")}
+2025-08-05T07:58:30.163843Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/web"), path: AnchoredSystemPathBuf("apps/web") }}))
+2025-08-05T07:58:30.229814Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T08:00:03.959664Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T08:00:03.959720Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T08:02:37.458051Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:02:37.459106Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:02:37.530714Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T08:03:09.990650Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:03:09.990710Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:03:30.420559Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:03:30.420604Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:03:39.489754Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:03:39.489817Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:03:39.599670Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:03:39.599680Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:03:39.599703Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T08:04:00.293276Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/test_scanner.py")}
+2025-08-05T08:04:00.293356Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:04:00.489788Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/test_scanner.py")}
+2025-08-05T08:04:00.489849Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:08:42.230939Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/__pycache__/scanner.cpython-312.pyc.4401424128"), AnchoredSystemPathBuf("apps/api/app/services/__pycache__/scanner.cpython-312.pyc")}
+2025-08-05T08:08:42.232286Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:08:43.190383Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/__pycache__/polygon_client.cpython-312.pyc"), AnchoredSystemPathBuf("apps/api/app/services/__pycache__/polygon_client.cpython-312.pyc.4402765200")}
+2025-08-05T08:08:43.190402Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:22:58.697262Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/test_scanner_simple.py")}
+2025-08-05T08:22:58.698703Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:22:59.088261Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/test_scanner_simple.py")}
+2025-08-05T08:22:59.088282Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:39:14.904566Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/core/__pycache__/config.cpython-312.pyc"), AnchoredSystemPathBuf("apps/api/app/core/__pycache__/config.cpython-312.pyc.4364789360")}
+2025-08-05T08:39:14.905589Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:39:23.881047Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:39:23.881136Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:39:29.481863Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:39:29.481902Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:39:34.781052Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:39:34.781069Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:48:30.642498Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/__pycache__/scanner.cpython-312.pyc.4370713312"), AnchoredSystemPathBuf("apps/api/app/services/__pycache__/scanner.cpython-312.pyc")}
+2025-08-05T08:48:30.643084Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:48:54.332212Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:48:54.332395Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:49:01.435313Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/test_scanner_simple.py")}
+2025-08-05T08:49:01.435367Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:49:29.131624Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/__pycache__/scanner.cpython-312.pyc"), AnchoredSystemPathBuf("apps/api/app/services/__pycache__/scanner.cpython-312.pyc.4341845136")}
+2025-08-05T08:49:29.131679Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:50:01.739058Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T08:50:01.739205Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T08:50:06.031698Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".taskmaster/tasks/tasks.json")}
+2025-08-05T08:50:06.031743Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2025-08-05T08:51:57.845503Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/test_scanner.py")}
+2025-08-05T08:51:57.846293Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:51:58.076001Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T08:51:59.631662Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/app/services/scanner.py")}
+2025-08-05T08:51:59.631674Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:51:59.631727Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2025-08-05T08:52:01.035691Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("apps/api/test_scanner_simple.py")}
+2025-08-05T08:52:01.035710Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@alpha-scanner/api"), path: AnchoredSystemPathBuf("apps/api") }}))
+2025-08-05T08:52:01.082506Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
