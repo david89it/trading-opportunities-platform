@@ -120,6 +120,9 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
               Position Size
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
+              Micro
+            </th>
+            <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
               Status
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
@@ -226,6 +229,23 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
                   <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                     {opportunity.setup.position_size_shares} shares
                   </div>
+                </div>
+              </td>
+              
+              <td style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                <div>
+                  <span title="Bid-ask spread in basis points">{typeof opportunity.features['bid_ask_spread_bps'] === 'number' ? `${(opportunity.features['bid_ask_spread_bps'] as number).toFixed(1)} bps` : '—'}</span>
+                </div>
+                <div>
+                  {(() => {
+                    const v = opportunity.features['volume_sma_20'] as number | undefined
+                    const p = (opportunity.features['ema_20'] as number | undefined) || (opportunity.features['vwap'] as number | undefined)
+                    if (v && p) {
+                      const addv = v * p
+                      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(addv)
+                    }
+                    return '—'
+                  })()}
                 </div>
               </td>
               

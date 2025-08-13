@@ -89,7 +89,7 @@ function Dashboard() {
               className="btn btn--outline"
               title="Compute and persist top opportunities to the database"
             >
-              {persist.isPending ? '💾 Saving…' : '💾 Persist'}
+              {persist.isPending ? '💾 Saving…' : persist.isSuccess ? '✅ Saved' : '💾 Persist'}
             </button>
             <button
               onClick={() => loadRecent.mutate()}
@@ -97,7 +97,7 @@ function Dashboard() {
               className="btn btn--outline"
               title="Load recently persisted opportunities from the database"
             >
-              {loadRecent.isPending ? '📥 Loading…' : '📥 Load Recent'}
+              {loadRecent.isPending ? '📥 Loading…' : loadRecent.isSuccess ? '✅ Loaded' : '📥 Load Recent'}
             </button>
           </div>
         </div>
