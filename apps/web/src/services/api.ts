@@ -1,7 +1,7 @@
 import { OpportunitiesResponse, Opportunity } from '@alpha-scanner/shared';
 import { mockApi } from './mockApi';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true' || false; // Use live API by default
 
 const api = {

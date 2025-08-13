@@ -51,15 +51,16 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
 
   const getScoreBar = (score: number, maxScore = 10) => {
     const percentage = (score / maxScore) * 100
-    const color = score >= 8 ? 'var(--color-success)' : 
-                  score >= 6 ? 'var(--color-warning)' : 
+    const normalized = score / maxScore * 10
+    const color = normalized >= 8 ? 'var(--color-success)' : 
+                  normalized >= 6 ? 'var(--color-warning)' : 
                   'var(--color-danger)'
 
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <div
           style={{
-            width: '60px',
+            width: '100px',
             height: '8px',
             backgroundColor: 'var(--color-border)',
             borderRadius: '4px',
@@ -75,8 +76,8 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
             }}
           />
         </div>
-        <span style={{ fontSize: '0.8rem', minWidth: '3rem' }}>
-          {score.toFixed(1)}
+        <span style={{ fontSize: '0.75rem', minWidth: '3rem', color: 'var(--color-text-muted)' }}>
+          {maxScore === 100 ? `${score.toFixed(1)}` : score.toFixed(1)}
         </span>
       </div>
     )
@@ -99,6 +100,9 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
             </th>
             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
               Signal Score
+            </th>
+            <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
+              Sub-Scores
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
               Entry / Stop / Target
@@ -150,7 +154,23 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
               </td>
               
               <td style={{ padding: '1rem' }}>
-                {getScoreBar(opportunity.signal_score)}
+                {getScoreBar(opportunity.signal_score, 100)}
+              </td>
+              <td style={{ padding: '1rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem' }}>Price</span>
+                    {getScoreBar(opportunity.scores.price as unknown as number, 100)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem' }}>Volume</span>
+                    {getScoreBar(opportunity.scores.volume as unknown as number, 100)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem' }}>Vol</span>
+                    {getScoreBar(opportunity.scores.volatility as unknown as number, 100)}
+                  </div>
+                </div>
               </td>
               
               <td style={{ padding: '1rem', textAlign: 'center' }}>

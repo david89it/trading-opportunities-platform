@@ -4,9 +4,11 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchOpportunityBySymbol } from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import { useState, useCallback } from 'react'
 
 function OpportunityDetail() {
   const { symbol } = useParams<{ symbol: string }>()
+  const [copied, setCopied] = useState(false)
   
   const {
     data: opportunity,
@@ -52,6 +54,29 @@ function OpportunityDetail() {
       </div>
     )
   }
+
+  const copyTradeDetails = useCallback(() => {
+    if (!opportunity) return
+    const lines = [
+      `Symbol: ${opportunity.symbol}`,
+      `Timestamp: ${new Date(opportunity.timestamp).toISOString()}`,
+      `Entry: ${opportunity.setup.entry.toFixed(2)}`,
+      `Stop: ${opportunity.setup.stop.toFixed(2)}`,
+      `Target 1: ${opportunity.setup.target1.toFixed(2)}`,
+      `${opportunity.setup.target2 ? `Target 2: ${opportunity.setup.target2.toFixed(2)}` : ''}`,
+      `R:R: ${opportunity.setup.rr_ratio.toFixed(2)}:1`,
+      `Position: $${opportunity.setup.position_size_usd.toFixed(2)} (${opportunity.setup.position_size_shares} shares)`,
+      `P(Target): ${(opportunity.risk.p_target * 100).toFixed(2)}%`,
+      `Net Expected R: ${opportunity.risk.net_expected_r.toFixed(3)}R`,
+      `Costs: ${opportunity.risk.costs_r.toFixed(3)}R`,
+      `Slippage: ${opportunity.risk.slippage_bps.toFixed(1)} bps`,
+      `Status: ${opportunity.guardrail_status}${opportunity.guardrail_reason ? ` (${opportunity.guardrail_reason})` : ''}`,
+    ].filter(Boolean)
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }).catch(() => {})
+  }, [opportunity])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -185,6 +210,24 @@ function OpportunityDetail() {
               <span>Slippage:</span>
               <span>{opportunity.risk.slippage_bps.toFixed(1)} bps</span>
             </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <button
+              onClick={copyTradeDetails}
+              style={{
+                padding: '0.5rem 0.75rem',
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+              }}
+              title="Copy trade details to clipboard"
+            >
+              {copied ? '✅ Copied' : '📋 Copy Trade Details'}
+            </button>
           </div>
         </div>
       </div>

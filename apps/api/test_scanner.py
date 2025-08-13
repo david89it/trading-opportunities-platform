@@ -78,12 +78,12 @@ async def test_scanner():
         print("\nScoring features...")
         scores = score_features(features)
         
-        print(f"✅ Price Score: {scores.price_score:.2f}/10")
-        print(f"✅ Volume Score: {scores.volume_score:.2f}/10") 
-        print(f"✅ Volatility Score: {scores.volatility_score:.2f}/10")
+        print(f"✅ Price Score: {scores.price/10:.2f}/10")
+        print(f"✅ Volume Score: {scores.volume/10:.2f}/10") 
+        print(f"✅ Volatility Score: {scores.volatility/10:.2f}/10")
         
-        # Calculate overall signal score
-        overall_score = (scores.price_score + scores.volume_score + scores.volatility_score) / 3
+        # Overall signal score on 0-10 scale (scores.overall is 0-100)
+        overall_score = scores.overall / 10
         print(f"✅ Overall Signal Score: {overall_score:.2f}/10")
         
         print("\n🎉 Scanner test completed successfully!")

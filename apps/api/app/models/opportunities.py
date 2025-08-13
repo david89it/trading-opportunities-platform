@@ -10,6 +10,7 @@ from datetime import datetime, time
 from typing import Optional, Dict, Any, List
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator, ConfigDict
+from app.core.config import settings
 
 
 class GuardrailStatus(str, Enum):
@@ -205,6 +206,10 @@ class Opportunity(BaseModel):
     @classmethod
     def validate_market_hours(cls, v):
         """Validate timestamp is during reasonable market hours (ET)"""
+        # In development, skip strict validation to avoid false negatives
+        if settings.DEBUG:
+            return v
+
         # Convert to ET for validation (simplified - in production use proper timezone handling)
         time_component = v.time()
         

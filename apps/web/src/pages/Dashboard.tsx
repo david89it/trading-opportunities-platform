@@ -1,12 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Opportunity } from '@alpha-scanner/shared'
 
-import { fetchOpportunities } from '../services/api'
+import api, { fetchOpportunities } from '../services/api'
 import OpportunityTable from '../components/OpportunityTable'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 
 function Dashboard() {
+  const queryClient = useQueryClient()
   const {
     data: opportunities,
     isLoading,
@@ -16,6 +17,14 @@ function Dashboard() {
     queryKey: ['opportunities'],
     queryFn: () => fetchOpportunities(),
     refetchInterval: 30000, // Refetch every 30 seconds
+  })
+
+  const preview = useMutation({
+    mutationFn: () => api.scanPreview({ limit: 20, min_score: 60 }),
+    onSuccess: (data) => {
+      // Replace current opportunities with preview results
+      queryClient.setQueryData(['opportunities'], data)
+    },
   })
 
   if (isLoading) {
@@ -46,9 +55,19 @@ function Dashboard() {
           <h1 style={{ margin: 0, color: 'var(--color-text-primary)' }}>
             Trading Opportunities
           </h1>
-          <button onClick={() => refetch()} style={{ padding: '0.5rem 1rem' }}>
-            🔄 Refresh
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={() => refetch()} style={{ padding: '0.5rem 1rem' }}>
+              🔄 Refresh
+            </button>
+            <button
+              onClick={() => preview.mutate()}
+              disabled={preview.isPending}
+              style={{ padding: '0.5rem 1rem' }}
+              title="Compute top opportunities from fixtures/live"
+            >
+              {preview.isPending ? '⏳ Running…' : '⚡ Run Preview'}
+            </button>
+          </div>
         </div>
         
         <div style={{ display: 'flex', gap: '2rem', color: 'var(--color-text-secondary)' }}>

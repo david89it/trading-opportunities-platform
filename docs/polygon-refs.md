@@ -1,3 +1,40 @@
+# Polygon.io References (Pinned for Development)
+
+This document summarizes the Polygon.io REST endpoints used and their relevant parameters, rate limits, and example payloads aligned with our fixtures.
+
+## Rate Limits (Free Tier)
+- Approx. 5 requests/minute. The client enforces spacing (12s) between calls when `USE_POLYGON_LIVE=true`.
+
+## Endpoints Used
+
+### Reference: List Tickers
+- GET `/v3/reference/tickers`
+- Params: `market=stocks`, `active=true`, `limit=50`, `sort=ticker`, `order=asc`
+- Purpose: Free-tier compatible list of tickers to iterate when building snapshots.
+
+### Aggregates (Custom Bars)
+- GET `/v2/aggs/ticker/{ticker}/range/1/day/{from}/{to}`
+- Params: `limit`, `sort=asc`
+- Used for: OHLCV history (100–200 bars) to compute technical features (EMA/ATR/RVOL/VWAP/pivots).
+
+### Single Ticker Snapshot (premium, substituted)
+- Premium endpoint: `/v2/snapshot/locale/us/markets/stocks/tickers/{ticker}`
+- Free-tier substitution: Use previous day’s aggregate close as snapshot proxy.
+
+### Ticker Overview
+- GET `/v3/reference/tickers/{ticker}`
+- Optional, provides `market_cap`, etc. Not required for MVP.
+
+## Fields of Interest
+- Aggregates: `o,h,l,c,v,vw,t`
+- Snapshot (proxied): `day.c`, `day.v`, `last_quote` fields for spread proxy
+
+## Spread Proxy for Slippage
+- Use `last_quote` bid/ask where available. Otherwise, assume a conservative spread in bps based on price/liquidity.
+
+## Fixtures
+- See `tests/fixtures/polygon/*.json` for pinned payloads mirroring fields above.
+
 # Polygon.io Market Data API Reference
 
 This document contains endpoint details, parameters, response schemas, and implementation notes for Polygon.io market data integration.

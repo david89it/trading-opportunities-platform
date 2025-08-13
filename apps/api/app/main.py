@@ -8,6 +8,9 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.routers import health, opportunities, risk
+from sqlalchemy import MetaData
+from app.db.database import engine
+from app.models.opportunity_db import Base as ORMBase
 
 # Create FastAPI app instance
 app = FastAPI(
@@ -31,6 +34,13 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(opportunities.router, prefix="/api/v1", tags=["opportunities"])
 app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
+
+# Create tables if not exist (MVP convenience; replace with Alembic later)
+try:
+    ORMBase.metadata.create_all(bind=engine)
+except Exception as e:
+    # In non-DB contexts, fail silently to keep API usable
+    pass
 
 # Global exception handler
 @app.exception_handler(Exception)

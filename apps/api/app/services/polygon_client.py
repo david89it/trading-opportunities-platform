@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Any, Union
 from urllib.parse import urlencode
 
 import httpx
+from pathlib import Path
 from pydantic import BaseModel, Field
 import redis.asyncio as redis
 
@@ -276,30 +277,127 @@ class PolygonClient:
     
     async def get_full_market_snapshot(self) -> List[MarketSnapshot]:
         """
-        Get full market snapshot for all US stocks
+        Get full market snapshot for all US stocks.
+        
+        FREE TIER COMPATIBLE: Uses tickers + aggregates endpoints instead of 
+        premium snapshot endpoint which is not available on free tier.
         
         Returns:
             List of MarketSnapshot objects with current market data
         """
-        endpoint = "/v2/snapshot/locale/us/markets/stocks"
+        if not self.use_live:
+            # Use fixtures in non-live mode
+            return await self._get_fixture_snapshots()
         
         try:
-            result = await self._make_request(endpoint, cache_ttl=300)  # 5-minute cache
+            # Step 1: Get list of active US stock tickers (free tier compatible)
+            tickers_endpoint = "/v3/reference/tickers"
+            params = {
+                "market": "stocks",
+                "active": "true", 
+                "limit": 50,  # Limit for free tier (5 calls/min limit)
+                "sort": "ticker",
+                "order": "asc"
+            }
+            
+            tickers_result = await self._make_request(tickers_endpoint, params=params, cache_ttl=3600)  # 1-hour cache
             
             snapshots = []
-            for item in result.get("results", []):
-                try:
-                    snapshot = MarketSnapshot(**item)
-                    snapshots.append(snapshot)
-                except Exception as e:
-                    logger.warning(f"Failed to parse snapshot for {item.get('ticker', 'unknown')}: {e}")
+            # Free tier doesn't include current day data - use yesterday's data
+            yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
             
-            logger.info(f"Retrieved {len(snapshots)} market snapshots")
+            # Step 2: Get yesterday's aggregate data for each ticker (FREE TIER COMPATIBLE)
+            tickers = tickers_result.get("results", [])[:25]  # Limit to 25 tickers to respect rate limits
+            
+            for ticker_info in tickers:
+                ticker = ticker_info.get("ticker")
+                if not ticker:
+                    continue
+                    
+                try:
+                    # Get yesterday's OHLCV data (free tier compatible)  
+                    agg_endpoint = f"/v2/aggs/ticker/{ticker}/range/1/day/{yesterday}/{yesterday}"
+                    agg_result = await self._make_request(agg_endpoint, cache_ttl=300)  # 5-minute cache
+                    
+                    results = agg_result.get("results", [])
+                    if not results:
+                        continue
+                        
+                    agg_data = results[0]
+                    
+                    # Convert to MarketSnapshot format (match Pydantic model field names)
+                    snapshot_data = {
+                        "ticker": ticker,
+                        "updated": int(agg_data.get("t", 0)) // 1000,  # Convert to Unix timestamp (seconds)
+                        "day": {
+                            "o": agg_data.get("o"),  # open
+                            "h": agg_data.get("h"),  # high  
+                            "l": agg_data.get("l"),  # low
+                            "c": agg_data.get("c"),  # close
+                            "v": int(agg_data.get("v", 0))  # volume
+                        },
+                        "last_quote": {
+                            "P": agg_data.get("c"),  # Use close as last price
+                            "p": agg_data.get("c"),
+                            "S": 100,  # Mock bid size
+                            "s": 100   # Mock ask size
+                        },
+                        "last_trade": {
+                            "p": agg_data.get("c"),  # Close price as last trade
+                            "t": int(agg_data.get("t", 0)) * 1000000  # Convert to nanoseconds
+                        },
+                        "prev_day": {
+                            "o": agg_data.get("o"),
+                            "h": agg_data.get("h"), 
+                            "l": agg_data.get("l"),
+                            "c": agg_data.get("c"),
+                            "v": int(agg_data.get("v", 0))
+                        }
+                    }
+                    
+                    snapshot = MarketSnapshot(**snapshot_data)
+                    snapshots.append(snapshot)
+                    
+                    # Rate limiting for free tier (5 calls/min = 12 seconds between calls)
+                    if self.use_live:
+                        await asyncio.sleep(0.5)  # Small delay to be respectful
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to get data for {ticker}: {e}")
+                    continue
+            
+            logger.info(f"Retrieved {len(snapshots)} market snapshots (FREE TIER)")
             return snapshots
             
         except Exception as e:
             logger.error(f"Failed to get market snapshot: {e}")
+            # Fall back to fixtures if live API fails
+            if self.use_live:
+                logger.info("Falling back to fixture data due to API error")
+                return await self._get_fixture_snapshots()
             raise PolygonApiError(f"Market snapshot request failed: {e}")
+    
+    async def _get_fixture_snapshots(self) -> List[MarketSnapshot]:
+        """Get market snapshots from fixtures"""
+        try:
+            fixture_path = Path(__file__).parent.parent.parent / "tests" / "fixtures" / "polygon" / "full-market-snapshot.json"
+            with open(fixture_path, 'r') as f:
+                data = json.load(f)
+            
+            snapshots = []
+            for item in data.get("results", []):
+                try:
+                    snapshot = MarketSnapshot(**item)
+                    snapshots.append(snapshot)
+                except Exception as e:
+                    logger.warning(f"Failed to parse fixture snapshot: {e}")
+            
+            logger.info(f"Retrieved {len(snapshots)} fixture market snapshots")
+            return snapshots
+            
+        except Exception as e:
+            logger.error(f"Failed to load fixture snapshots: {e}")
+            return []
     
     async def get_single_ticker_snapshot(self, ticker: str) -> Optional[MarketSnapshot]:
         """

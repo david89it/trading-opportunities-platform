@@ -14,13 +14,14 @@ Features computed:
 """
 
 import math
+import uuid
 import statistics
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 import logging
 
 from app.models.opportunities import (
-    Opportunity, FeatureScores, TradeSetup, GuardrailStatus
+    Opportunity, FeatureScores, TradeSetup, GuardrailStatus, RiskMetrics
 )
 from app.services.polygon_client import get_polygon_client
 from app.core.config import settings
@@ -728,10 +729,10 @@ def generate_trade_setup(features: Dict[str, Any], scores: FeatureScores,
     rr_ratio = (target_1 - entry_price) / (entry_price - stop_loss)
     
     return TradeSetup(
-        entry_price=entry_price,
-        stop_loss=stop_loss,
-        target_1=target_1,
-        target_2=target_2,
+        entry=entry_price,
+        stop=stop_loss,
+        target1=target_1,
+        target2=target_2,
         position_size_usd=position_usd,
         position_size_shares=position_shares,
         rr_ratio=rr_ratio
@@ -760,7 +761,9 @@ def check_guardrails(opportunity: Dict[str, Any]) -> GuardrailStatus:
         return GuardrailStatus.BLOCKED
     
     # Net expected R check
-    net_r = opportunity.get("net_expected_r", 0)
+    # Read from nested risk if present
+    risk = opportunity.get("risk", {})
+    net_r = risk.get("net_expected_r", opportunity.get("net_expected_r", 0))
     if net_r < 0.05:  # Minimum 0.05R expected
         return GuardrailStatus.BLOCKED
     
@@ -770,7 +773,8 @@ def check_guardrails(opportunity: Dict[str, Any]) -> GuardrailStatus:
         return GuardrailStatus.REVIEW
     
     # Volatility check (ATR% too high)
-    atr_percent = opportunity.get("atr_percent", 0)
+    features = opportunity.get("features", {})
+    atr_percent = features.get("atr_percent") or features.get("atr_pct") or 0
     if atr_percent > 5.0:  # More than 5% ATR
         return GuardrailStatus.REVIEW
     
@@ -812,39 +816,43 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
         # Analyze each liquid stock
         for snapshot in liquid_snapshots[:limit * 2]:  # Analyze more than limit to get best
             try:
-                ticker = snapshot["ticker"]
+                # Normalize snapshot to dict
+                snapshot_dict = snapshot.model_dump() if hasattr(snapshot, "model_dump") else snapshot
+                ticker = snapshot_dict["ticker"]
                 
                 # Get historical data
-                aggregates_data = await client.get_aggregates(
+                bars_objects = await client.get_aggregates(
                     ticker=ticker,
                     multiplier=1,
                     timespan="day",
                     limit=200  # Need enough history for indicators
                 )
-                
-                bars = aggregates_data.get("results", [])
+                # Convert AggregateBar objects to dicts expected by compute_features
+                bars = [
+                    {"o": b.o, "h": b.h, "l": b.l, "c": b.c, "v": b.v}
+                    for b in bars_objects
+                ]
                 if len(bars) < 50:
                     continue
                 
                 # Compute features
-                features = compute_features(bars, snapshot)
+                features = compute_features(bars, snapshot_dict)
+                # Ensure required keys
+                if "atr_pct" not in features:
+                    features["atr_pct"] = round(features.get("atr_percent", 0.0), 2)
                 
                 # Score features
                 scores = score_features(features)
                 
                 # Calculate overall signal score
-                signal_score = (
-                    scores.price_score * SCORE_WEIGHTS["trend_alignment"] +
-                    scores.volume_score * SCORE_WEIGHTS["volume"] +
-                    scores.volatility_score * SCORE_WEIGHTS["volatility"]
-                ) * 10 / sum(SCORE_WEIGHTS.values())
+                signal_score = scores.overall
                 
                 # Skip if below minimum score
                 if signal_score < min_score:
                     continue
                 
                 # Generate trade setup
-                current_price = snapshot.get("day", {}).get("c", 0)
+                current_price = snapshot_dict.get("day", {}).get("c", 0)
                 setup = generate_trade_setup(features, scores, current_price)
                 
                 # Calculate probabilities and costs
@@ -853,26 +861,27 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 # Cost estimation
                 slippage_bps = features["bid_ask_spread_bps"] + 5  # Spread + impact
                 fees_usd = 1.0  # Fixed fee assumption
-                risk_per_share = setup.entry_price - setup.stop_loss
+                risk_per_share = abs(setup.entry - setup.stop)
                 
-                costs_r = costs_in_r(slippage_bps, fees_usd, setup.entry_price, risk_per_share)
+                costs_r = costs_in_r(slippage_bps, fees_usd, setup.entry, risk_per_share)
                 net_r = net_expected_r(p_target, setup.rr_ratio, costs_r)
                 
                 # Create opportunity object
                 opportunity_data = {
+                    "id": str(uuid.uuid4()),
                     "symbol": ticker,
                     "timestamp": datetime.utcnow(),
                     "signal_score": signal_score,
-                    "features": scores,
+                    "scores": scores,
                     "setup": setup,
-                    "p_target": p_target,
-                    "net_expected_r": net_r,
-                    "costs_r": costs_r,
-                    "current_price": current_price,
-                    "volume_rvol": features["rvol"],
-                    "atr_percent": features["atr_percent"],
-                    "features_json": features,
-                    "version": "1.0"
+                    "risk": RiskMetrics(
+                        p_target=p_target,
+                        net_expected_r=net_r,
+                        costs_r=costs_r,
+                        slippage_bps=slippage_bps,
+                    ),
+                    "features": features,
+                    "version": "1.0.0",
                 }
                 
                 # Apply guardrails
@@ -911,37 +920,38 @@ async def get_opportunity_by_symbol(symbol: str) -> Optional[Opportunity]:
         Opportunity object or None if not found/viable
     """
     try:
-        client = get_polygon_client()
+        client = await get_polygon_client()
         
         # Get current snapshot
-        snapshot_data = await client.get_single_ticker_snapshot(symbol)
-        snapshot = snapshot_data.get("results")
+        snapshot = await client.get_single_ticker_snapshot(symbol)
         
         if not snapshot:
             return None
         
         # Get historical data
-        aggregates_data = await client.get_aggregates(
+        bars_objects = await client.get_aggregates(
             ticker=symbol,
             multiplier=1,
             timespan="day",
             limit=200
         )
-        
-        bars = aggregates_data.get("results", [])
+        # Convert to dicts for feature computation
+        bars = [
+            {"o": b.o, "h": b.h, "l": b.l, "c": b.c, "v": b.v}
+            for b in bars_objects
+        ]
         if len(bars) < 50:
             return None
         
         # Compute features and scores
-        features = compute_features(bars, snapshot)
+        snapshot_dict = snapshot.model_dump() if hasattr(snapshot, "model_dump") else snapshot
+        features = compute_features(bars, snapshot_dict)
+        if "atr_pct" not in features:
+            features["atr_pct"] = round(features.get("atr_percent", 0.0), 2)
         scores = score_features(features)
         
         # Calculate signal score
-        signal_score = (
-            scores.price_score * SCORE_WEIGHTS["trend_alignment"] +
-            scores.volume_score * SCORE_WEIGHTS["volume"] +
-            scores.volatility_score * SCORE_WEIGHTS["volatility"]
-        ) * 10 / sum(SCORE_WEIGHTS.values())
+        signal_score = scores.overall
         
         # Generate trade setup
         current_price = snapshot.get("day", {}).get("c", 0)
@@ -952,26 +962,27 @@ async def get_opportunity_by_symbol(symbol: str) -> Optional[Opportunity]:
         
         slippage_bps = features["bid_ask_spread_bps"] + 5
         fees_usd = 1.0
-        risk_per_share = setup.entry_price - setup.stop_loss
+        risk_per_share = abs(setup.entry - setup.stop)
         
-        costs_r = costs_in_r(slippage_bps, fees_usd, setup.entry_price, risk_per_share)
+        costs_r = costs_in_r(slippage_bps, fees_usd, setup.entry, risk_per_share)
         net_r = net_expected_r(p_target, setup.rr_ratio, costs_r)
         
         # Create opportunity
         opportunity_data = {
+            "id": str(uuid.uuid4()),
             "symbol": symbol,
             "timestamp": datetime.utcnow(),
             "signal_score": signal_score,
-            "features": scores,
+            "scores": scores,
             "setup": setup,
-            "p_target": p_target,
-            "net_expected_r": net_r,
-            "costs_r": costs_r,
-            "current_price": current_price,
-            "volume_rvol": features["rvol"],
-            "atr_percent": features["atr_percent"],
-            "features_json": features,
-            "version": "1.0"
+            "risk": RiskMetrics(
+                p_target=p_target,
+                net_expected_r=net_r,
+                costs_r=costs_r,
+                slippage_bps=slippage_bps,
+            ),
+            "features": features,
+            "version": "1.0.0",
         }
         
         # Apply guardrails
