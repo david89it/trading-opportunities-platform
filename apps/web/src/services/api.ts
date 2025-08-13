@@ -110,8 +110,8 @@ const api = {
 };
 
 // Compatibility exports for existing components
-export async function fetchOpportunities(): Promise<OpportunitiesResponse> {
-  return api.getOpportunities();
+export async function fetchOpportunities(params?: { limit?: number; offset?: number; min_score?: number; status?: string }): Promise<OpportunitiesResponse> {
+  return api.getOpportunities(params);
 }
 
 export async function fetchOpportunityBySymbol(symbol: string): Promise<Opportunity> {

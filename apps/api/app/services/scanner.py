@@ -738,7 +738,7 @@ def generate_trade_setup(features: Dict[str, Any], scores: FeatureScores,
         rr_ratio=rr_ratio
     )
 
-def check_guardrails(opportunity: Dict[str, Any]) -> GuardrailStatus:
+def check_guardrails(opportunity: Dict[str, Any]) -> Tuple[GuardrailStatus, Optional[str]]:
     """
     Apply risk guardrails to determine if opportunity is approved.
     
@@ -753,35 +753,35 @@ def check_guardrails(opportunity: Dict[str, Any]) -> GuardrailStatus:
     # Risk per trade check
     risk_pct = setup.get("position_size_usd", 0) / 100000.0  # Assuming $100K portfolio
     if risk_pct > settings.RISK_PCT_PER_TRADE * 2:  # Max 2x normal risk
-        return GuardrailStatus.BLOCKED
+        return GuardrailStatus.BLOCKED, "Position risk exceeds 2x RISK_PCT_PER_TRADE"
     
     # Minimum R:R ratio (≥3:1 preferred)
     rr_ratio = setup.get("rr_ratio", 0)
     if rr_ratio < 3.0:
-        return GuardrailStatus.BLOCKED
+        return GuardrailStatus.BLOCKED, "R:R below 3.0"
     
     # Net expected R check — require at least +0.10R per PRD gate
     risk = opportunity.get("risk", {})
     net_r = risk.get("net_expected_r", opportunity.get("net_expected_r", 0))
     if net_r < 0.10:
-        return GuardrailStatus.BLOCKED
+        return GuardrailStatus.BLOCKED, "Net expected R below +0.10R"
     
     # Signal score minimum (0-100 scale); soft gate
     signal_score = opportunity.get("signal_score", 0)
     if signal_score < 60.0:
-        return GuardrailStatus.REVIEW
+        return GuardrailStatus.REVIEW, "Signal score below 60"
     
     # Volatility & microstructure checks
     features = opportunity.get("features", {})
     atr_percent = features.get("atr_percent") or features.get("atr_pct") or 0
     if atr_percent > 5.0:  # More than 5% ATR
-        return GuardrailStatus.REVIEW
+        return GuardrailStatus.REVIEW, "ATR% above 5%"
     # Spread review if too wide
     spread_bps = features.get("bid_ask_spread_bps", 50.0)
     if spread_bps > 25.0:
-        return GuardrailStatus.REVIEW
+        return GuardrailStatus.REVIEW, "Spread above 25 bps"
     
-    return GuardrailStatus.APPROVED
+    return GuardrailStatus.APPROVED, None
 
 async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Opportunity]:
     """
@@ -894,9 +894,10 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                     "version": "1.0.0",
                 }
                 
-                # Apply guardrails
-                guardrail_status = check_guardrails(opportunity_data)
+                # Apply guardrails with reason
+                guardrail_status, guardrail_reason = check_guardrails(opportunity_data)
                 opportunity_data["guardrail_status"] = guardrail_status
+                opportunity_data["guardrail_reason"] = guardrail_reason
                 
                 # Create Opportunity object
                 opportunity = Opportunity(**opportunity_data)
@@ -995,9 +996,10 @@ async def get_opportunity_by_symbol(symbol: str) -> Optional[Opportunity]:
             "version": "1.0.0",
         }
         
-        # Apply guardrails
-        guardrail_status = check_guardrails(opportunity_data)
+        # Apply guardrails with reason
+        guardrail_status, guardrail_reason = check_guardrails(opportunity_data)
         opportunity_data["guardrail_status"] = guardrail_status
+        opportunity_data["guardrail_reason"] = guardrail_reason
         
         return Opportunity(**opportunity_data)
         

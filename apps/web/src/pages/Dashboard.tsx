@@ -11,6 +11,7 @@ function Dashboard() {
   const queryClient = useQueryClient()
   const [minScore, setMinScore] = useState<number | undefined>(undefined)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  const [approvedOnly, setApprovedOnly] = useState<boolean>(false)
 
   const {
     data: opportunities,
@@ -18,8 +19,8 @@ function Dashboard() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['opportunities', { minScore, statusFilter }],
-    queryFn: () => fetchOpportunities({ min_score: minScore, status: statusFilter }),
+    queryKey: ['opportunities', { minScore, statusFilter, approvedOnly }],
+    queryFn: () => fetchOpportunities({ min_score: minScore, status: approvedOnly ? 'approved' : statusFilter }),
     refetchInterval: 30000, // Refetch every 30 seconds
   })
 
@@ -27,7 +28,7 @@ function Dashboard() {
     mutationFn: () => api.scanPreview({ limit: 20, min_score: minScore ?? 60 }),
     onSuccess: (data) => {
       // Replace current opportunities with preview results
-      queryClient.setQueryData(['opportunities', { minScore, statusFilter }], data)
+      queryClient.setQueryData(['opportunities', { minScore, statusFilter, approvedOnly }], data)
     },
   })
 
@@ -38,7 +39,7 @@ function Dashboard() {
   const loadRecent = useMutation({
     mutationFn: () => api.getRecentOpportunities({ limit: 50 }),
     onSuccess: (data) => {
-      queryClient.setQueryData(['opportunities', { minScore, statusFilter }], data)
+      queryClient.setQueryData(['opportunities', { minScore, statusFilter, approvedOnly }], data)
     },
   })
 
@@ -143,15 +144,23 @@ function Dashboard() {
             <option value="blocked">Blocked</option>
           </select>
         </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input
+            type="checkbox"
+            checked={approvedOnly}
+            onChange={(e) => setApprovedOnly(e.currentTarget.checked)}
+          />
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Approved only</span>
+        </label>
         <button className="btn btn--neutral" onClick={() => refetch()}>
           Apply
         </button>
-        {(minScore !== undefined || statusFilter) && (
-          <button className="btn btn--outline" onClick={() => { setMinScore(undefined); setStatusFilter(undefined); }}>
+        {(minScore !== undefined || statusFilter || approvedOnly) && (
+          <button className="btn btn--outline" onClick={() => { setMinScore(undefined); setStatusFilter(undefined); setApprovedOnly(false); }}>
             Clear Filters
           </button>
         )}
-        {(minScore !== undefined || statusFilter) && (
+        {(minScore !== undefined || statusFilter || approvedOnly) && (
           <div style={{
             marginLeft: 'auto',
             padding: '0.35rem 0.6rem',
@@ -160,7 +169,7 @@ function Dashboard() {
             color: 'var(--color-text-secondary)',
             fontSize: '0.8rem'
           }}>
-            Active: {minScore !== undefined ? `min_score ≥ ${minScore}` : '—'}{statusFilter ? ` • status: ${statusFilter}` : ''}
+            Active: {minScore !== undefined ? `min_score ≥ ${minScore}` : '—'}{statusFilter ? ` • status: ${statusFilter}` : ''}{approvedOnly ? ' • approved only' : ''}
           </div>
         )}
       </div>
