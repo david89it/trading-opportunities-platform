@@ -173,10 +173,6 @@ class PolygonClient:
             cache_ttl: Cache TTL in seconds (300 = 5 minutes)
         """
         
-        # Use fixture data in development mode
-        if not self.use_live:
-            return await self._get_fixture_data(endpoint, params)
-        
         # Build cache key
         cache_key = f"polygon:{endpoint}:{hash(str(sorted((params or {}).items())))}"
         
@@ -186,7 +182,11 @@ class PolygonClient:
             logger.debug(f"Cache hit for {endpoint}")
             return cached_data
         
-        # Prepare request
+        # In fixture mode, bypass live calls entirely
+        if not self.use_live:
+            return await self._get_fixture_data(endpoint, params)
+        
+        # Prepare request (live only)
         if not self.api_key:
             raise PolygonApiError("Polygon.io API key not configured")
         
