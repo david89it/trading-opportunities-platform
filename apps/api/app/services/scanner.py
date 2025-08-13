@@ -838,18 +838,18 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 if len(bars) < 50:
                     continue
                 
-        # Compute features
-        features = compute_features(bars, snapshot_dict)
+                # Compute features
+                features = compute_features(bars, snapshot_dict)
                 # Ensure required keys
                 if "atr_pct" not in features:
                     features["atr_pct"] = round(features.get("atr_percent", 0.0), 2)
-        # ADDV (20-day average dollar volume) filter ~ $20M minimum
-        avg_volume = features.get("volume_sma_20")
-        price_for_addv = snapshot_dict.get("day", {}).get("c", 0) or features.get("ema_20")
-        if avg_volume and price_for_addv:
-            addv = avg_volume * price_for_addv
-            if addv < 20_000_000:
-                continue
+                # ADDV (20-day average dollar volume) filter ~ $20M minimum
+                avg_volume = features.get("volume_sma_20")
+                price_for_addv = snapshot_dict.get("day", {}).get("c", 0) or features.get("ema_20")
+                if avg_volume and price_for_addv:
+                    addv = avg_volume * price_for_addv
+                    if addv < 20_000_000:
+                        continue
                 
                 # Score features
                 scores = score_features(features)
