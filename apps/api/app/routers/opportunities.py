@@ -10,7 +10,13 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 import logging
 
-from app.models.opportunities import Opportunity, OpportunitiesResponse
+from app.models.opportunities import (
+    Opportunity,
+    OpportunitiesResponse,
+    FeatureScores,
+    TradeSetup,
+    RiskMetrics,
+)
 from app.services.mock_data import get_mock_opportunities
 from app.db.database import get_db_session
 from app.models.opportunity_db import OpportunityDB, Base as _Base  # noqa: F401

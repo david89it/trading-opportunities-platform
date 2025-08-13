@@ -14,6 +14,42 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Theme tokens (Task 7 polish) */
+:root {
+  --color-primary: #2563eb; /* blue-600 */
+  --color-secondary: #64748b; /* slate-500 */
+  --color-success: #22c55e; /* green-500 */
+  --color-warning: #f59e0b; /* amber-500 */
+  --color-danger: #ef4444;  /* red-500 */
+  --color-surface: #111827; /* gray-900 */
+  --color-border: #334155;  /* slate-700 */
+  --color-text-primary: #f8fafc;   /* slate-50 */
+  --color-text-secondary: #cbd5e1; /* slate-300 */
+  --color-text-muted: #94a3b8;     /* slate-400 */
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.05s ease;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn--primary { background-color: var(--color-primary); color: #fff; }
+.btn--neutral { background-color: #1f2937; color: var(--color-text-secondary); border-color: var(--color-border); }
+.btn--outline { background-color: transparent; color: var(--color-text-secondary); border-color: var(--color-border); }
+.btn:hover { transform: translateY(-1px); }
+
 .container {
   max-width: 1400px;
   margin: 0 auto;

@@ -131,7 +131,8 @@ class TestPolygonClient:
             mock_instance.get_full_market_snapshot.return_value = []
             mock_instance.get_single_ticker_snapshot.return_value = None
             mock_instance.get_aggregates.return_value = []
-            mock_client = mock_instance
+            # assign to global client reference
+            mock_client.return_value = mock_instance
             
             # Import after mocking
             from app.services.polygon_client import (

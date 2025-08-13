@@ -215,15 +215,7 @@ function OpportunityDetail() {
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <button
               onClick={copyTradeDetails}
-              style={{
-                padding: '0.5rem 0.75rem',
-                backgroundColor: 'var(--color-primary)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-              }}
+              className="btn btn--primary"
               title="Copy trade details to clipboard"
             >
               {copied ? '✅ Copied' : '📋 Copy Trade Details'}

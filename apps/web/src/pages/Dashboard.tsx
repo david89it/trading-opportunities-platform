@@ -67,13 +67,13 @@ function Dashboard() {
             Trading Opportunities
           </h1>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => refetch()} style={{ padding: '0.5rem 1rem' }}>
+            <button onClick={() => refetch()} className="btn btn--neutral">
               🔄 Refresh
             </button>
             <button
               onClick={() => preview.mutate()}
               disabled={preview.isPending}
-              style={{ padding: '0.5rem 1rem' }}
+              className="btn btn--primary"
               title="Compute top opportunities from fixtures/live"
             >
               {preview.isPending ? '⏳ Running…' : '⚡ Run Preview'}
@@ -81,7 +81,7 @@ function Dashboard() {
             <button
               onClick={() => persist.mutate()}
               disabled={persist.isPending}
-              style={{ padding: '0.5rem 1rem' }}
+              className="btn btn--outline"
               title="Compute and persist top opportunities to the database"
             >
               {persist.isPending ? '💾 Saving…' : '💾 Persist'}
@@ -89,7 +89,7 @@ function Dashboard() {
             <button
               onClick={() => loadRecent.mutate()}
               disabled={loadRecent.isPending}
-              style={{ padding: '0.5rem 1rem' }}
+              className="btn btn--outline"
               title="Load recently persisted opportunities from the database"
             >
               {loadRecent.isPending ? '📥 Loading…' : '📥 Load Recent'}
