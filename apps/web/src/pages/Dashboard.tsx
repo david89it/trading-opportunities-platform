@@ -2,39 +2,43 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Opportunity } from '@alpha-scanner/shared'
 
 import api, { fetchOpportunities } from '../services/api'
+import { useState } from 'react'
 import OpportunityTable from '../components/OpportunityTable'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 
 function Dashboard() {
   const queryClient = useQueryClient()
+  const [minScore, setMinScore] = useState<number | undefined>(undefined)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+
   const {
     data: opportunities,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['opportunities'],
-    queryFn: () => fetchOpportunities(),
+    queryKey: ['opportunities', { minScore, statusFilter }],
+    queryFn: () => fetchOpportunities({ min_score: minScore, status: statusFilter }),
     refetchInterval: 30000, // Refetch every 30 seconds
   })
 
   const preview = useMutation({
-    mutationFn: () => api.scanPreview({ limit: 20, min_score: 60 }),
+    mutationFn: () => api.scanPreview({ limit: 20, min_score: minScore ?? 60 }),
     onSuccess: (data) => {
       // Replace current opportunities with preview results
-      queryClient.setQueryData(['opportunities'], data)
+      queryClient.setQueryData(['opportunities', { minScore, statusFilter }], data)
     },
   })
 
   const persist = useMutation({
-    mutationFn: () => api.persistOpportunities({ limit: 20, min_score: 60 }),
+    mutationFn: () => api.persistOpportunities({ limit: 20, min_score: minScore ?? 60 }),
   })
 
   const loadRecent = useMutation({
     mutationFn: () => api.getRecentOpportunities({ limit: 50 }),
     onSuccess: (data) => {
-      queryClient.setQueryData(['opportunities'], data)
+      queryClient.setQueryData(['opportunities', { minScore, statusFilter }], data)
     },
   })
 
@@ -105,6 +109,43 @@ function Dashboard() {
             Last updated: {new Date().toLocaleTimeString()}
           </div>
         </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{
+        display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem',
+        padding: '0.75rem', border: '1px solid var(--color-border)', borderRadius: 8,
+        backgroundColor: 'var(--color-surface)'
+      }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Min Score</span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            value={minScore ?? ''}
+            onChange={(e) => setMinScore(e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value))}
+            placeholder="e.g. 60"
+            style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-primary)' }}
+          />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Status</span>
+          <select
+            value={statusFilter ?? ''}
+            onChange={(e) => setStatusFilter(e.currentTarget.value === '' ? undefined : e.currentTarget.value)}
+            style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-primary)' }}
+          >
+            <option value="">All</option>
+            <option value="approved">Approved</option>
+            <option value="review">Review</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </label>
+        <button className="btn btn--neutral" onClick={() => refetch()}>
+          Apply
+        </button>
       </div>
 
       {/* Opportunities Table */}

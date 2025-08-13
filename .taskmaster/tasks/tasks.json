@@ -338,6 +338,15 @@
             "details": "Added PriceLevelsChart component showing horizontal lines for price levels.",
             "status": "done",
             "testStrategy": "Chart renders correctly with provided levels; responsive behavior works"
+          },
+          {
+            "id": 5,
+            "title": "Add filters on Dashboard (min score, status)",
+            "description": "Filter opportunities by minimum score and guardrail status",
+            "dependencies": [],
+            "details": "Added filter controls and wired to query params for /opportunities and preview.",
+            "status": "done",
+            "testStrategy": "Changing filters updates the table; preview respects min score"
           }
         ]
       },
