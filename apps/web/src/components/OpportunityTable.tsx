@@ -259,6 +259,23 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
           ))}
         </tbody>
       </table>
+      {/* Optional micro-details row: spread and ADDV */}
+      <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+        <span style={{ marginRight: '1rem' }}>
+          Spread: {typeof opportunities?.[0]?.features?.['bid_ask_spread_bps'] === 'number' ? `${(opportunities[0].features['bid_ask_spread_bps'] as number).toFixed(1)} bps` : '—'}
+        </span>
+        <span>
+          ADDV: {(() => {
+            const v = opportunities?.[0]?.features?.['volume_sma_20'] as number | undefined
+            const p = (opportunities?.[0]?.features?.['ema_20'] as number | undefined) || undefined
+            if (v && p) {
+              const addv = v * p
+              return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(addv)
+            }
+            return '—'
+          })()}
+        </span>
+      </div>
     </div>
   )
 }
