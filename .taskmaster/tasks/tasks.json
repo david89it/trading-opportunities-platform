@@ -320,6 +320,15 @@
             "details": "Added a button to copy symbol, timestamp, entry/stop/targets, R:R, position size, probabilities, costs, and status to clipboard.",
             "status": "done",
             "testStrategy": "Clicking the button copies expected text; shows visual confirmation"
+          },
+          {
+            "id": 3,
+            "title": "Add Persist/Load buttons on Dashboard",
+            "description": "Wire to POST /opportunities/persist and GET /opportunities/recent",
+            "dependencies": ["8"],
+            "details": "Buttons added to allow manual save and retrieval of opportunities from DB for MVP.",
+            "status": "done",
+            "testStrategy": "Click Persist saves non-zero entries; Load Recent populates table without errors"
           }
         ]
       },

@@ -27,6 +27,17 @@ function Dashboard() {
     },
   })
 
+  const persist = useMutation({
+    mutationFn: () => api.persistOpportunities({ limit: 20, min_score: 60 }),
+  })
+
+  const loadRecent = useMutation({
+    mutationFn: () => api.getRecentOpportunities({ limit: 50 }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['opportunities'], data)
+    },
+  })
+
   if (isLoading) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -66,6 +77,22 @@ function Dashboard() {
               title="Compute top opportunities from fixtures/live"
             >
               {preview.isPending ? '⏳ Running…' : '⚡ Run Preview'}
+            </button>
+            <button
+              onClick={() => persist.mutate()}
+              disabled={persist.isPending}
+              style={{ padding: '0.5rem 1rem' }}
+              title="Compute and persist top opportunities to the database"
+            >
+              {persist.isPending ? '💾 Saving…' : '💾 Persist'}
+            </button>
+            <button
+              onClick={() => loadRecent.mutate()}
+              disabled={loadRecent.isPending}
+              style={{ padding: '0.5rem 1rem' }}
+              title="Load recently persisted opportunities from the database"
+            >
+              {loadRecent.isPending ? '📥 Loading…' : '📥 Load Recent'}
             </button>
           </div>
         </div>

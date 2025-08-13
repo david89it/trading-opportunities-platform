@@ -78,6 +78,35 @@ const api = {
     }
     return response.json();
   },
+
+  // Persistence endpoints (Task 8 MVP)
+  persistOpportunities: async (params?: { limit?: number; min_score?: number }): Promise<{ status: string; count: number }> => {
+    const url = new URL(`${API_BASE_URL}/opportunities/persist`, window.location.origin)
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) url.searchParams.append(key, value.toString())
+      })
+    }
+    const response = await fetch(url.toString(), { method: 'POST' })
+    if (!response.ok) {
+      throw new Error('Failed to persist opportunities')
+    }
+    return response.json()
+  },
+
+  getRecentOpportunities: async (params?: { limit?: number; offset?: number }): Promise<OpportunitiesResponse> => {
+    const url = new URL(`${API_BASE_URL}/opportunities/recent`, window.location.origin)
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) url.searchParams.append(key, value.toString())
+      })
+    }
+    const response = await fetch(url.toString())
+    if (!response.ok) {
+      throw new Error('Failed to fetch recent opportunities')
+    }
+    return response.json()
+  },
 };
 
 // Compatibility exports for existing components
