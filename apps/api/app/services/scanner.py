@@ -712,10 +712,10 @@ def generate_trade_setup(features: Dict[str, Any], scores: FeatureScores,
     stop_multiplier = 1.5
     stop_loss = entry_price - (stop_multiplier * atr)
     
-    # Targets (2.5x and 4x risk for T1 and T2)
+    # Targets (3.0x and 5.0x risk for T1 and T2) to prefer ≥3R setups per PRD
     risk_per_share = entry_price - stop_loss
-    target_1 = entry_price + (2.5 * risk_per_share)
-    target_2 = entry_price + (4.0 * risk_per_share)
+    target_1 = entry_price + (3.0 * risk_per_share)
+    target_2 = entry_price + (5.0 * risk_per_share)
     
     # Position sizing
     portfolio_value = 100000.0  # Default $100K portfolio
@@ -755,27 +755,30 @@ def check_guardrails(opportunity: Dict[str, Any]) -> GuardrailStatus:
     if risk_pct > settings.RISK_PCT_PER_TRADE * 2:  # Max 2x normal risk
         return GuardrailStatus.BLOCKED
     
-    # Minimum R:R ratio
+    # Minimum R:R ratio (≥3:1 preferred)
     rr_ratio = setup.get("rr_ratio", 0)
-    if rr_ratio < 2.0:
+    if rr_ratio < 3.0:
         return GuardrailStatus.BLOCKED
     
-    # Net expected R check
-    # Read from nested risk if present
+    # Net expected R check — require at least +0.10R per PRD gate
     risk = opportunity.get("risk", {})
     net_r = risk.get("net_expected_r", opportunity.get("net_expected_r", 0))
-    if net_r < 0.05:  # Minimum 0.05R expected
+    if net_r < 0.10:
         return GuardrailStatus.BLOCKED
     
-    # Signal score minimum
+    # Signal score minimum (0-100 scale); soft gate
     signal_score = opportunity.get("signal_score", 0)
-    if signal_score < 5.0:
+    if signal_score < 60.0:
         return GuardrailStatus.REVIEW
     
-    # Volatility check (ATR% too high)
+    # Volatility & microstructure checks
     features = opportunity.get("features", {})
     atr_percent = features.get("atr_percent") or features.get("atr_pct") or 0
     if atr_percent > 5.0:  # More than 5% ATR
+        return GuardrailStatus.REVIEW
+    # Spread review if too wide
+    spread_bps = features.get("bid_ask_spread_bps", 50.0)
+    if spread_bps > 25.0:
         return GuardrailStatus.REVIEW
     
     return GuardrailStatus.APPROVED
@@ -835,16 +838,23 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 if len(bars) < 50:
                     continue
                 
-                # Compute features
-                features = compute_features(bars, snapshot_dict)
+        # Compute features
+        features = compute_features(bars, snapshot_dict)
                 # Ensure required keys
                 if "atr_pct" not in features:
                     features["atr_pct"] = round(features.get("atr_percent", 0.0), 2)
+        # ADDV (20-day average dollar volume) filter ~ $20M minimum
+        avg_volume = features.get("volume_sma_20")
+        price_for_addv = snapshot_dict.get("day", {}).get("c", 0) or features.get("ema_20")
+        if avg_volume and price_for_addv:
+            addv = avg_volume * price_for_addv
+            if addv < 20_000_000:
+                continue
                 
                 # Score features
                 scores = score_features(features)
                 
-                # Calculate overall signal score
+                # Calculate overall signal score (0-100)
                 signal_score = scores.overall
                 
                 # Skip if below minimum score
