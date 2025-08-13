@@ -329,6 +329,15 @@
             "details": "Buttons added to allow manual save and retrieval of opportunities from DB for MVP.",
             "status": "done",
             "testStrategy": "Click Persist saves non-zero entries; Load Recent populates table without errors"
+          },
+          {
+            "id": 4,
+            "title": "Add Price Levels mini-chart on Opportunity Detail",
+            "description": "Render entry/stop/targets in a small TradingView chart",
+            "dependencies": [],
+            "details": "Added PriceLevelsChart component showing horizontal lines for price levels.",
+            "status": "done",
+            "testStrategy": "Chart renders correctly with provided levels; responsive behavior works"
           }
         ]
       },

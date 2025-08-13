@@ -5,6 +5,7 @@ import { fetchOpportunityBySymbol } from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import { useState, useCallback } from 'react'
+import PriceLevelsChart from '../components/PriceLevelsChart'
 
 function OpportunityDetail() {
   const { symbol } = useParams<{ symbol: string }>()
@@ -222,6 +223,29 @@ function OpportunityDetail() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Price Levels Mini-Chart */}
+      <div
+        style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--color-surface)',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+          marginBottom: '2rem',
+        }}
+      >
+        <h2 style={{ margin: '0 0 1rem 0', color: 'var(--color-text-primary)' }}>
+          Price Levels
+        </h2>
+        <PriceLevelsChart
+          width={800}
+          height={240}
+          entry={opportunity.setup.entry}
+          stop={opportunity.setup.stop}
+          target1={opportunity.setup.target1}
+          target2={opportunity.setup.target2}
+        />
       </div>
 
       {/* Signal Scores */}
