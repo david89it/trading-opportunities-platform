@@ -35,6 +35,10 @@ ATR_PERIOD = 14
 VOLUME_SMA_PERIOD = 20
 BOLLINGER_PERIOD = 20
 BOLLINGER_STD = 2.0
+# Liquidity thresholds
+ADDV_MIN_USD = 20_000_000
+if settings.DEBUG:
+    ADDV_MIN_USD = 5_000_000
 
 # Scoring weights and thresholds
 SCORE_WEIGHTS = {
@@ -804,9 +808,12 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
         # Filter for liquid stocks
         liquid_snapshots = []
         for snapshot in snapshots:
-            day_data = snapshot.get("day", {})
-            volume = day_data.get("v", 0)
-            price = day_data.get("c", 0)
+            # Handle pydantic model vs dict
+            day_data = (
+                snapshot.day if hasattr(snapshot, "day") else snapshot.get("day", {})
+            )
+            volume = (day_data.get("v", 0) if isinstance(day_data, dict) else day_data.get("v", 0))
+            price = (day_data.get("c", 0) if isinstance(day_data, dict) else day_data.get("c", 0))
             
             # Basic liquidity filters
             if volume > 1000000 and price > 5.0 and price < 500.0:
@@ -816,11 +823,14 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
         
         opportunities = []
         
-        # Analyze each liquid stock
-        for snapshot in liquid_snapshots[:limit * 2]:  # Analyze more than limit to get best
+        # Analyze each liquid stock (sample more in DEBUG to ensure candidates)
+        sample_count = limit * (4 if settings.DEBUG else 2)
+        for snapshot in liquid_snapshots[:sample_count]:
             try:
                 # Normalize snapshot to dict
-                snapshot_dict = snapshot.model_dump() if hasattr(snapshot, "model_dump") else snapshot
+                snapshot_dict = (
+                    snapshot.model_dump() if hasattr(snapshot, "model_dump") else snapshot
+                )
                 ticker = snapshot_dict["ticker"]
                 
                 # Get historical data
@@ -843,12 +853,12 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 # Ensure required keys
                 if "atr_pct" not in features:
                     features["atr_pct"] = round(features.get("atr_percent", 0.0), 2)
-                # ADDV (20-day average dollar volume) filter ~ $20M minimum
+                # ADDV (20-day average dollar volume) filter (relaxed in DEBUG)
                 avg_volume = features.get("volume_sma_20")
                 price_for_addv = snapshot_dict.get("day", {}).get("c", 0) or features.get("ema_20")
                 if avg_volume and price_for_addv:
                     addv = avg_volume * price_for_addv
-                    if addv < 20_000_000:
+                    if addv < ADDV_MIN_USD:
                         continue
                 
                 # Score features

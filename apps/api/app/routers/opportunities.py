@@ -26,6 +26,9 @@ from app.core.config import settings
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# In-memory fallback store for dev (no Postgres)
+_inmem_persisted: List[Opportunity] = []
+
 
 async def get_scanner_enabled() -> bool:
     """Dependency to check if live scanning is enabled"""
@@ -111,37 +114,44 @@ async def persist_opportunities(
         # Compute via scanner (uses fixtures when live is disabled)
         computed = await scan_opportunities(limit=limit, min_score=min_score)
         inserted = 0
-        with get_db_session() as db:
-            for opp in computed:
-                db_item = db.get(OpportunityDB, opp.id)
-                if not db_item:
-                    db_item = OpportunityDB(id=opp.id)
-                # Map fields
-                db_item.symbol = opp.symbol
-                db_item.ts = opp.timestamp
-                db_item.signal_score = opp.signal_score
-                db_item.price_score = opp.scores.price
-                db_item.volume_score = opp.scores.volume
-                db_item.volatility_score = opp.scores.volatility
-                db_item.entry = opp.setup.entry
-                db_item.stop = opp.setup.stop
-                db_item.target1 = opp.setup.target1
-                db_item.target2 = opp.setup.target2
-                db_item.pos_size_usd = opp.setup.position_size_usd
-                db_item.pos_size_shares = opp.setup.position_size_shares
-                db_item.rr_ratio = opp.setup.rr_ratio
-                db_item.p_target = opp.risk.p_target
-                db_item.net_expected_r = opp.risk.net_expected_r
-                db_item.costs_r = opp.risk.costs_r
-                db_item.slippage_bps = opp.risk.slippage_bps
-                db_item.guardrail_status = opp.guardrail_status
-                db_item.guardrail_reason = opp.guardrail_reason
-                db_item.features = opp.features
-                db_item.version = opp.version
-                db.add(db_item)
-                inserted += 1
-            db.commit()
-        return {"status": "ok", "count": inserted}
+        try:
+            with get_db_session() as db:
+                for opp in computed:
+                    db_item = db.get(OpportunityDB, opp.id)
+                    if not db_item:
+                        db_item = OpportunityDB(id=opp.id)
+                    # Map fields
+                    db_item.symbol = opp.symbol
+                    db_item.ts = opp.timestamp
+                    db_item.signal_score = opp.signal_score
+                    db_item.price_score = opp.scores.price
+                    db_item.volume_score = opp.scores.volume
+                    db_item.volatility_score = opp.scores.volatility
+                    db_item.entry = opp.setup.entry
+                    db_item.stop = opp.setup.stop
+                    db_item.target1 = opp.setup.target1
+                    db_item.target2 = opp.setup.target2
+                    db_item.pos_size_usd = opp.setup.position_size_usd
+                    db_item.pos_size_shares = opp.setup.position_size_shares
+                    db_item.rr_ratio = opp.setup.rr_ratio
+                    db_item.p_target = opp.risk.p_target
+                    db_item.net_expected_r = opp.risk.net_expected_r
+                    db_item.costs_r = opp.risk.costs_r
+                    db_item.slippage_bps = opp.risk.slippage_bps
+                    db_item.guardrail_status = opp.guardrail_status
+                    db_item.guardrail_reason = opp.guardrail_reason
+                    db_item.features = opp.features
+                    db_item.version = opp.version
+                    db.add(db_item)
+                    inserted += 1
+                db.commit()
+            return {"status": "ok", "count": inserted}
+        except Exception as db_err:
+            # In dev without DB, fall back to in-memory store
+            logger.warning(f"DB unavailable, using in-memory persistence: {db_err}")
+            global _inmem_persisted
+            _inmem_persisted = list(computed)
+            return {"status": "ok", "count": len(computed), "storage": "memory"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Persist failed: {e}")
 
@@ -199,8 +209,17 @@ async def get_recent_opportunities(
                 offset=offset,
                 timestamp=datetime.now(timezone.utc),
             )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Read failed: {e}")
+    except Exception as db_err:
+        # In dev without DB, serve from in-memory fallback
+        logger.warning(f"DB unavailable, serving recent opportunities from memory: {db_err}")
+        items = _inmem_persisted[:limit]
+        return OpportunitiesResponse(
+            opportunities=items,
+            total=len(items),
+            limit=limit,
+            offset=offset,
+            timestamp=datetime.now(timezone.utc),
+        )
 
 
 @router.get("/opportunities/{symbol}", response_model=Opportunity)
