@@ -146,6 +146,23 @@ function Dashboard() {
         <button className="btn btn--neutral" onClick={() => refetch()}>
           Apply
         </button>
+        {(minScore !== undefined || statusFilter) && (
+          <button className="btn btn--outline" onClick={() => { setMinScore(undefined); setStatusFilter(undefined); }}>
+            Clear Filters
+          </button>
+        )}
+        {(minScore !== undefined || statusFilter) && (
+          <div style={{
+            marginLeft: 'auto',
+            padding: '0.35rem 0.6rem',
+            borderRadius: 9999,
+            backgroundColor: '#1f2937',
+            color: 'var(--color-text-secondary)',
+            fontSize: '0.8rem'
+          }}>
+            Active: {minScore !== undefined ? `min_score ≥ ${minScore}` : '—'}{statusFilter ? ` • status: ${statusFilter}` : ''}
+          </div>
+        )}
       </div>
 
       {/* Opportunities Table */}
@@ -167,11 +184,16 @@ function Dashboard() {
           <p style={{ color: 'var(--color-text-muted)' }}>
             The scanner hasn't identified any trading opportunities that meet the current criteria.
             <br />
-            Market conditions may not be favorable, or all signals may be filtered by risk management rules.
+            Market conditions may not be favorable, or current filters may be too restrictive.
           </p>
-          <button onClick={() => refetch()} style={{ marginTop: '1rem' }}>
+          <button onClick={() => refetch()} className="btn btn--neutral" style={{ marginTop: '1rem' }}>
             Check Again
           </button>
+          {(minScore !== undefined || statusFilter) && (
+            <button onClick={() => { setMinScore(undefined); setStatusFilter(undefined); }} className="btn btn--outline" style={{ marginTop: '1rem', marginLeft: '0.5rem' }}>
+              Clear Filters
+            </button>
+          )}
         </div>
       )}
 
