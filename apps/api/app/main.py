@@ -35,12 +35,7 @@ app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(opportunities.router, prefix="/api/v1", tags=["opportunities"])
 app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
 
-# Create tables if not exist (MVP convenience; replace with Alembic later)
-try:
-    ORMBase.metadata.create_all(bind=engine)
-except Exception as e:
-    # In non-DB contexts, fail silently to keep API usable
-    pass
+# Tables managed by Alembic migrations (see apps/api/alembic)
 
 # Global exception handler
 @app.exception_handler(Exception)
