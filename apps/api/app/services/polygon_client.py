@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Any, Union
 from urllib.parse import urlencode
 
 import httpx
+import math
 from pathlib import Path
 from pydantic import BaseModel, Field
 import redis.asyncio as redis
@@ -81,12 +82,13 @@ class PolygonClient:
     def __init__(self, 
                  api_key: Optional[str] = None,
                  base_url: str = "https://api.polygon.io",
-                 use_live: bool = False,
+                 use_live: Optional[bool] = None,
                  redis_client: Optional[redis.Redis] = None):
         
         self.api_key = api_key or settings.POLYGON_API_KEY
         self.base_url = base_url
-        self.use_live = use_live or settings.USE_POLYGON_LIVE
+        # Respect explicit flag; otherwise fall back to settings
+        self.use_live = settings.USE_POLYGON_LIVE if use_live is None else bool(use_live)
         self.redis_client = redis_client
         
         # HTTP client with timeout settings
@@ -263,7 +265,7 @@ class PolygonClient:
             return {"status": "OK", "results": []}
 
         fixture_path = (
-            Path(__file__).parent.parent.parent
+            Path(__file__).parent.parent.parent  # apps/api
             / "tests"
             / "fixtures"
             / "polygon"
@@ -309,6 +311,8 @@ class PolygonClient:
                 "order": "asc"
             }
             
+            if not self.use_live:
+                return await self._get_fixture_snapshots()
             tickers_result = await self._make_request(tickers_endpoint, params=params, cache_ttl=3600)  # 1-hour cache
             
             snapshots = []
@@ -495,13 +499,44 @@ class PolygonClient:
         try:
             result = await self._make_request(endpoint, params, cache_ttl=3600)  # 1-hour cache
             
-            bars = []
+            bars: List[AggregateBar] = []
             for item in result.get("results", []):
                 try:
                     bar = AggregateBar(**item)
                     bars.append(bar)
                 except Exception as e:
                     logger.warning(f"Failed to parse bar data: {e}")
+
+            # Fixture-friendly fallback: synthesize if not enough history
+            if not self.use_live and len(bars) < 50:
+                base = bars[-1].c if bars else (100.0 + (sum(ord(c) for c in ticker) % 50))
+                synthesized = []
+                # generate ~120 daily bars deterministically
+                for i in range(120):
+                    # smooth pseudo drift/noise
+                    drift = 0.0005 * i
+                    wave = math.sin(i * 0.15 + (sum(ord(c) for c in ticker) % 10)) * 0.01
+                    prev = synthesized[-1].c if synthesized else base
+                    close = max(1.0, prev * (1.0 + drift + wave))
+                    high = close * (1.0 + 0.01)
+                    low = close * (1.0 - 0.01)
+                    open_ = (prev + close) / 2
+                    vol = max(10000.0, abs(math.sin(i * 0.07)) * 5_000_000.0)
+                    item = {
+                        "o": open_,
+                        "h": high,
+                        "l": low,
+                        "c": close,
+                        "v": vol,
+                        "t": int((datetime.now() - timedelta(days=120 - i)).timestamp() * 1000),
+                        "n": 1000,
+                    }
+                    try:
+                        synthesized.append(AggregateBar(**item))
+                    except Exception:
+                        continue
+                bars = synthesized
+                logger.info(f"Synthesized {len(bars)} bars for {ticker} (fixture mode)")
             
             logger.debug(f"Retrieved {len(bars)} bars for {ticker}")
             return bars
@@ -548,7 +583,10 @@ async def get_polygon_client() -> PolygonClient:
     global _polygon_client
     
     if _polygon_client is None:
-        _polygon_client = PolygonClient()
+        from app.core.config import settings as _settings
+        # In DEBUG always force fixtures; otherwise respect USE_POLYGON_LIVE
+        force_live = (not _settings.DEBUG) and bool(_settings.USE_POLYGON_LIVE)
+        _polygon_client = PolygonClient(api_key=_settings.POLYGON_API_KEY, use_live=force_live)
         await _polygon_client.__aenter__()
     else:
         # Unwrap MagicMock from tests if present
