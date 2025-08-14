@@ -80,7 +80,7 @@ const api = {
   },
 
   // Persistence endpoints (Task 8 MVP)
-  persistOpportunities: async (params?: { limit?: number; min_score?: number }): Promise<{ status: string; count: number }> => {
+  persistOpportunities: async (params?: { limit?: number; min_score?: number; name?: string }): Promise<{ status: string; count: number; name?: string }> => {
     const url = new URL(`${API_BASE_URL}/opportunities/persist`, window.location.origin)
     if (params) {
       Object.entries(params).forEach(([key, value]) => {

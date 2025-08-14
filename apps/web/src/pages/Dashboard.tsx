@@ -32,8 +32,9 @@ function Dashboard() {
     },
   })
 
+  const [listName, setListName] = useState<string>('')
   const persist = useMutation({
-    mutationFn: () => api.persistOpportunities({ limit: 20, min_score: minScore ?? 60 }),
+    mutationFn: () => api.persistOpportunities({ limit: 20, min_score: minScore ?? 60, name: listName || undefined }),
   })
 
   const loadRecent = useMutation({
@@ -83,13 +84,20 @@ function Dashboard() {
             >
               {preview.isPending ? '⏳ Running…' : '⚡ Run Preview'}
             </button>
+            <input
+              type="text"
+              placeholder="List name (optional)"
+              value={listName}
+              onChange={(e) => setListName(e.currentTarget.value)}
+              style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-primary)' }}
+            />
             <button
               onClick={() => persist.mutate()}
               disabled={persist.isPending}
               className="btn btn--outline"
-              title="Compute and persist top opportunities to the database"
+              title="Compute and save current list"
             >
-              {persist.isPending ? '💾 Saving…' : persist.isSuccess ? '✅ Saved' : '💾 Persist'}
+              {persist.isPending ? '💾 Saving…' : persist.isSuccess ? '✅ Saved' : '💾 Save Current List'}
             </button>
             <button
               onClick={() => loadRecent.mutate()}

@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 # In-memory fallback store for dev (no Postgres)
 _inmem_persisted: List[Opportunity] = []
+_inmem_last_list_name: Optional[str] = None
 
 
 async def get_scanner_enabled() -> bool:
@@ -108,6 +109,7 @@ async def get_opportunities(
 async def persist_opportunities(
     limit: int = Query(20, ge=1, le=100),
     min_score: float = Query(60.0, ge=0, le=100),
+    name: Optional[str] = Query(None, description="Optional name for this saved list"),
 ):
     """
     Compute top-N opportunities (fixtures/live based on flag) and persist to Postgres.
@@ -148,13 +150,14 @@ async def persist_opportunities(
                     db.add(db_item)
                     inserted += 1
                 db.commit()
-            return {"status": "ok", "count": inserted}
+            return {"status": "ok", "count": inserted, "name": name}
         except Exception as db_err:
             # In dev without DB, fall back to in-memory store
             logger.warning(f"DB unavailable, using in-memory persistence: {db_err}")
-            global _inmem_persisted
+            global _inmem_persisted, _inmem_last_list_name
             _inmem_persisted = list(computed)
-            return {"status": "ok", "count": len(computed), "storage": "memory"}
+            _inmem_last_list_name = name
+            return {"status": "ok", "count": len(computed), "storage": "memory", "name": name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Persist failed: {e}")
 
