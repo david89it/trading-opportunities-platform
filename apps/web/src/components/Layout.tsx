@@ -38,16 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 Dashboard
               </Link>
-              <Link
-                to="/opportunities"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/opportunities') 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                Opportunities
-              </Link>
+              {/* Removed Opportunities tab (dashboard covers it) */}
               <Link
                 to="/risk-sandbox"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
