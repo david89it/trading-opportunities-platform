@@ -22,12 +22,25 @@
         "dependencies": [],
         "priority": "high",
         "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement Supabase Authentication and User Management System",
+        "description": "Integrate Supabase authentication with email/magic link sign-in, session management, protected routes, and user-specific data access controls.",
+        "details": "Implement a comprehensive authentication system using Supabase:\n\n1. **Supabase Setup and Configuration**:\n   - Install @supabase/supabase-js client library\n   - Configure environment variables for dev/prod (SUPABASE_URL, SUPABASE_ANON_KEY)\n   - Initialize Supabase client with proper configuration\n   - Set up authentication providers (email/magic link)\n\n2. **Authentication Implementation**:\n   - Create authentication service/context for React app\n   - Implement email + magic link sign-in flow\n   - Add session persistence and automatic token refresh\n   - Handle authentication state changes and user session lifecycle\n   - Implement sign-out functionality with proper cleanup\n\n3. **Protected Routes and Navigation Guards**:\n   - Create higher-order component or hook for route protection\n   - Implement redirect logic for unauthenticated users\n   - Add loading states during authentication checks\n   - Protect sensitive routes (scanner, portfolio, settings)\n\n4. **Row Level Security (RLS) Policies**:\n   - Design database schema with user_id foreign keys\n   - Create RLS policies for user-owned data (watchlists, portfolios, settings)\n   - Implement policies for read/write operations based on authenticated user\n   - Test policy enforcement across different user scenarios\n\n5. **Minimal Account UI Components**:\n   - Sign-in form with email input and magic link request\n   - Authentication status indicator in header/navigation\n   - Sign-out button with confirmation\n   - Loading states and error handling for auth operations\n   - Style components using established Nova design system tokens\n\n6. **Error Handling and User Experience**:\n   - Implement comprehensive error handling for auth failures\n   - Add user-friendly error messages and validation\n   - Handle network connectivity issues and retry logic\n   - Implement proper loading states and feedback",
+        "testStrategy": "Comprehensive authentication testing approach:\n\n1. **Authentication Flow Testing**:\n   - Test email/magic link sign-in process end-to-end\n   - Verify magic link email delivery and click-through authentication\n   - Test session persistence across browser refreshes and tabs\n   - Validate automatic token refresh and session expiration handling\n\n2. **Protected Routes Testing**:\n   - Verify unauthenticated users are redirected to sign-in\n   - Test authenticated users can access protected routes\n   - Validate proper navigation flow after successful authentication\n   - Test route protection across different user states\n\n3. **RLS Policy Verification**:\n   - Create test users and verify data isolation\n   - Test CRUD operations with different user contexts\n   - Verify unauthorized users cannot access other users' data\n   - Test policy enforcement at database level using Supabase dashboard\n\n4. **UI Component Testing**:\n   - Test sign-in form validation and submission\n   - Verify authentication status updates in real-time\n   - Test sign-out functionality and state cleanup\n   - Validate error message display and user feedback\n\n5. **Environment and Configuration Testing**:\n   - Test authentication in both development and production environments\n   - Verify environment variable configuration\n   - Test Supabase client initialization and connection\n   - Validate proper error handling for configuration issues\n\n6. **Security Testing**:\n   - Test for XSS vulnerabilities in authentication forms\n   - Verify secure token storage and transmission\n   - Test session timeout and automatic logout\n   - Validate HTTPS enforcement for authentication endpoints",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-15T13:13:20.489Z",
       "description": "Default tasks context",
-      "updated": "2025-08-15T17:19:07.128Z"
+      "updated": "2025-08-15T20:16:52.239Z"
     }
   }
 }
