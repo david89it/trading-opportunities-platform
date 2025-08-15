@@ -139,12 +139,6 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
                 borderBottom: '1px solid var(--color-border)',
                 transition: 'background-color 0.15s ease',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#0f1a2e'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-              }}
             >
               <td style={{ padding: '1rem' }}>
                 <div>
