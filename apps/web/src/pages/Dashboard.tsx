@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Opportunity } from '@alpha-scanner/shared'
 
 import api, { fetchOpportunities } from '../services/api'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import OpportunityTable from '../components/OpportunityTable'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -33,6 +33,7 @@ function Dashboard() {
   })
 
   const [listName, setListName] = useState<string>('')
+  const [lastSavedName, setLastSavedName] = useState<string | undefined>('')
   const persist = useMutation({
     mutationFn: () => api.persistOpportunities({ limit: 20, min_score: minScore ?? 60, name: listName || undefined }),
   })
@@ -43,6 +44,10 @@ function Dashboard() {
       queryClient.setQueryData(['opportunities', { minScore, statusFilter, approvedOnly }], data)
     },
   })
+
+  useEffect(() => {
+    api.getLastSavedListName().then((r) => setLastSavedName(r.name || undefined)).catch(() => {})
+  }, [])
 
   if (isLoading) {
     return (
@@ -117,6 +122,13 @@ function Dashboard() {
           <div>
             Last updated: {new Date().toLocaleTimeString()}
           </div>
+          {lastSavedName && (
+            <div title="Last saved list name" style={{ marginLeft: 'auto' }}>
+              <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#374151', color: '#d1d5db' }}>
+                Saved: {lastSavedName}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

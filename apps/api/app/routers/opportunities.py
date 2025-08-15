@@ -228,6 +228,15 @@ async def get_recent_opportunities(
         )
 
 
+@router.get("/opportunities/last-list", response_model=dict)
+async def get_last_saved_list_name():
+    """Return the name of the last saved list (in-memory/dev helper)."""
+    try:
+        return {"name": _inmem_last_list_name}
+    except Exception:
+        return {"name": None}
+
+
 @router.get("/opportunities/{symbol}", response_model=Opportunity)
 async def get_opportunity_by_symbol(
     symbol: str,

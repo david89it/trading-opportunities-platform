@@ -107,6 +107,12 @@ const api = {
     }
     return response.json()
   },
+
+  getLastSavedListName: async (): Promise<{ name?: string | null }> => {
+    const response = await fetch(`${API_BASE_URL}/opportunities/last-list`)
+    if (!response.ok) throw new Error('Failed to fetch last saved list name')
+    return response.json()
+  },
 };
 
 // Compatibility exports for existing components
