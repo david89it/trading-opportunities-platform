@@ -7,25 +7,51 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background-color: #0f172a;
-  color: #f8fafc;
-  line-height: 1.6;
+  /* Adopt VDL theme typography and palette */
+  font-family: var(--typography-body-2-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif);
+  font-size: var(--typography-body-2-font-size, 1rem);
+  line-height: var(--typography-body-2-line-height, 1.5714rem);
+  background-color: var(--palette-default-surface-2, #f5f5f5);
+  color: var(--palette-default-text, #000);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Theme tokens (Task 7 polish) */
+/* Theme tokens (Task 7 polish + VDS-inspired) */
 :root {
-  --color-primary: #2563eb; /* blue-600 */
-  --color-secondary: #64748b; /* slate-500 */
-  --color-success: #22c55e; /* green-500 */
-  --color-warning: #f59e0b; /* amber-500 */
-  --color-danger: #ef4444;  /* red-500 */
-  --color-surface: #111827; /* gray-900 */
-  --color-border: #334155;  /* slate-700 */
-  --color-text-primary: #f8fafc;   /* slate-50 */
-  --color-text-secondary: #cbd5e1; /* slate-300 */
-  --color-text-muted: #94a3b8;     /* slate-400 */
+  /* Map local tokens to VDL palette and theme variables */
+  --color-primary: var(--palette-default-active, #1434cb);
+  --color-primary-hover: var(--palette-default-active-hover, #173be8);
+  --color-secondary: var(--palette-default-text-subtle, #4a4a4a);
+
+  /* Semantic */
+  --color-success: var(--palette-messaging-graphics-positive, #40996b);
+  --color-warning: var(--palette-messaging-graphics-warning, #c38004);
+  --color-danger: var(--palette-messaging-graphics-negative, #d65151);
+
+  /* Surfaces */
+  --color-bg: var(--palette-default-surface-2, #f5f5f5);
+  --color-surface: var(--palette-default-surface-1, #ffffff);
+  --color-surface-elev: var(--palette-default-surface-3, #f0f0f0);
+  --color-border: var(--palette-default-border, rgba(0,0,0,0.1));
+
+  /* Text */
+  --color-text-primary: var(--palette-default-text, #000);
+  --color-text-secondary: var(--palette-default-text-subtle, #4a4a4a);
+  --color-text-muted: color-mix(in oklab, var(--palette-default-text) 50%, transparent);
+
+  /* Elevation / motion and radii from theme */
+  --elev-1: var(--elevation-small, 0 1px 3px rgba(0,0,0,0.08));
+  --elev-2: var(--elevation-medium, 0 4px 15px rgba(0,0,0,0.08));
+  --radius-sm: var(--theme-border-radius, 6px);
+  --radius-md: calc(var(--theme-border-radius, 6px) + 4px);
+  --radius-lg: calc(var(--theme-border-radius, 6px) + 8px);
+  --transition-fast: 150ms cubic-bezier(0.2, 0.0, 0, 1);
+}
+
+/* Focus styles aligned with VDL */
+*:focus-visible {
+  outline: var(--theme-focus-outline-size, 1px) solid var(--color-primary);
+  outline-offset: var(--theme-focus-outline-offset, 2px);
 }
 
 /* Buttons */
@@ -33,33 +59,78 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease, transform 0.05s ease;
+  transition: background-color var(--transition-fast), opacity 120ms ease, transform 60ms ease;
+  box-shadow: var(--elev-1);
 }
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 .btn--primary { background-color: var(--color-primary); color: #fff; }
-.btn--neutral { background-color: #1f2937; color: var(--color-text-secondary); border-color: var(--color-border); }
+.btn--primary:hover { background-color: var(--color-primary-hover); }
+.btn--neutral { background-color: var(--color-surface-elev); color: var(--color-text-secondary); border-color: var(--color-border); }
 .btn--outline { background-color: transparent; color: var(--color-text-secondary); border-color: var(--color-border); }
-.btn:hover { transform: translateY(-1px); }
+.btn:hover { transform: translateY(-1px); box-shadow: var(--elev-2); }
 
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 var(--size-scalable-16, 1rem);
 }
 
-/* Basic styling for now - can be enhanced later */
+/* Headings */
 h1, h2, h3 {
-  color: #f8fafc;
-  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--size-scalable-8, 1rem);
+}
+h1 {
+  font-family: var(--typography-headline-2-font-family, inherit);
+  font-size: var(--typography-headline-2-font-size, 1.7857rem);
+  line-height: var(--typography-headline-2-line-height, 2.3571rem);
+  font-weight: var(--typography-headline-2-font-weight, 500);
+}
+h2 {
+  font-family: var(--typography-headline-3-font-family, inherit);
+  font-size: var(--typography-headline-3-font-size, 1.4286rem);
+  line-height: var(--typography-headline-3-line-height, 1.8571rem);
+  font-weight: var(--typography-headline-3-font-weight, 600);
+}
+h3 {
+  font-family: var(--typography-subtitle-1-font-family, inherit);
+  font-size: var(--typography-subtitle-1-font-size, 1.1429rem);
+  line-height: var(--typography-subtitle-1-line-height, 1.5rem);
+  font-weight: var(--typography-subtitle-1-font-weight, 600);
+}
+
+/* Cards/surfaces */
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+
+/* Table semantics – rely on palette for zebra and hover */
+table {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+thead th {
+  color: var(--color-text-secondary);
+}
+tbody tr:hover {
+  background: var(--palette-default-surface-3, #f0f0f0);
+  color: var(--palette-default-text, #000);
+}
+tbody tr:hover a {
+  color: var(--palette-default-text, #000);
 }
 
 .loading {
@@ -67,14 +138,14 @@ h1, h2, h3 {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  color: #94a3b8;
+  color: var(--color-text-muted);
 }
 
 .error {
-  background-color: rgba(239, 68, 68, 0.1);
-  border: 1px solid #ef4444;
-  color: #ef4444;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin: 1rem 0;
+  background-color: var(--palette-messaging-surface-negative, rgba(255, 214, 233, 0.35));
+  border: 1px solid var(--palette-messaging-graphics-negative, #d65151);
+  color: var(--palette-messaging-text-negative, #AD2929);
+  padding: var(--size-scalable-8, 1rem);
+  border-radius: var(--radius-md);
+  margin: var(--size-scalable-8, 1rem) 0;
 }

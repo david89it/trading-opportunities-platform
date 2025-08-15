@@ -9,7 +9,8 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        // Force IPv4 to avoid ::1 (IPv6) ECONNREFUSED when API binds to 0.0.0.0
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
     },

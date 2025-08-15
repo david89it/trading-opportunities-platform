@@ -10,11 +10,15 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "clean": "rm -rf dist node_modules/.vite"
+    "clean": "rm -rf dist node_modules/.vite",
+    "postinstall": ""
   },
   "dependencies": {
     "@alpha-scanner/shared": "workspace:*",
     "@tanstack/react-query": "^5.17.0",
+    "@visa/nova-icons-react": "^2.0.4",
+    "@visa/nova-react": "^2.5.4",
+    "@visa/nova-styles": "^1.6.2",
     "chart.js": "^4.5.0",
     "lightweight-charts": "^5.0.8",
     "react": "^18.2.0",

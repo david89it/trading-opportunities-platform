@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import App from './App'
 import './index.css'
+// Visa Nova styles (theme)
+// Nova Styles CSS (core + theme)
+import '@visa/nova-styles/styles.css'
+import '@visa/nova-styles/themes/visa-light/index.css'
 
 // Create a query client with sensible defaults
 const queryClient = new QueryClient({

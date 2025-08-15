@@ -3,6 +3,8 @@ import { Opportunity } from '@alpha-scanner/shared'
 
 import api, { fetchOpportunities } from '../services/api'
 import { useEffect, useState } from 'react'
+import { Button, Typography } from '@visa/nova-react'
+import { GenericCalendarTiny } from '@visa/nova-icons-react'
 import OpportunityTable from '../components/OpportunityTable'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -36,6 +38,9 @@ function Dashboard() {
   const [lastSavedName, setLastSavedName] = useState<string | undefined>('')
   const persist = useMutation({
     mutationFn: () => api.persistOpportunities({ limit: 20, min_score: minScore ?? 60, name: listName || undefined }),
+    onSuccess: (res) => {
+      if (res?.name) setLastSavedName(res.name)
+    },
   })
 
   const loadRecent = useMutation({
@@ -72,23 +77,28 @@ function Dashboard() {
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div
+        className="card"
+        style={{
+          marginBottom: '1.25rem',
+          padding: '1rem 1.25rem',
+          backgroundColor: 'var(--color-surface-elev)',
+          border: '1px solid var(--color-border)',
+          borderTop: '3px solid var(--color-primary)',
+          boxShadow: 'var(--elev-2)'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
           <h1 style={{ margin: 0, color: 'var(--color-text-primary)' }}>
             Trading Opportunities
           </h1>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => refetch()} className="btn btn--neutral">
-              🔄 Refresh
-            </button>
-            <button
-              onClick={() => preview.mutate()}
-              disabled={preview.isPending}
-              className="btn btn--primary"
-              title="Compute top opportunities from fixtures/live"
-            >
-              {preview.isPending ? '⏳ Running…' : '⚡ Run Preview'}
-            </button>
+            <Button appearance="secondary" onClick={() => refetch()}>
+              Refresh
+            </Button>
+            <Button appearance="primary" onClick={() => preview.mutate()} disabled={preview.isPending}>
+              {preview.isPending ? 'Running…' : 'Run Preview'}
+            </Button>
             <input
               type="text"
               placeholder="List name (optional)"
@@ -96,32 +106,18 @@ function Dashboard() {
               onChange={(e) => setListName(e.currentTarget.value)}
               style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-primary)' }}
             />
-            <button
-              onClick={() => persist.mutate()}
-              disabled={persist.isPending}
-              className="btn btn--outline"
-              title="Compute and save current list"
-            >
-              {persist.isPending ? '💾 Saving…' : persist.isSuccess ? '✅ Saved' : '💾 Save Current List'}
-            </button>
-            <button
-              onClick={() => loadRecent.mutate()}
-              disabled={loadRecent.isPending}
-              className="btn btn--outline"
-              title="Load recently persisted opportunities from the database"
-            >
-              {loadRecent.isPending ? '📥 Loading…' : loadRecent.isSuccess ? '✅ Loaded' : '📥 Load Recent'}
-            </button>
+            <Button appearance="outline" onClick={() => persist.mutate()} disabled={persist.isPending}>
+              {persist.isPending ? 'Saving…' : persist.isSuccess ? 'Saved' : 'Save Current List'}
+            </Button>
+            <Button appearance="outline" onClick={() => loadRecent.mutate()} disabled={loadRecent.isPending}>
+              {loadRecent.isPending ? 'Loading…' : loadRecent.isSuccess ? 'Loaded' : 'Load Recent'}
+            </Button>
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '2rem', color: 'var(--color-text-secondary)' }}>
-          <div>
-            <strong>{opportunities?.total || 0}</strong> opportunities found
-          </div>
-          <div>
-            Last updated: {new Date().toLocaleTimeString()}
-          </div>
+        <div style={{ display: 'flex', gap: '1.25rem', color: 'var(--color-text-secondary)', alignItems: 'center' }}>
+          <Typography variant="body-strong">{opportunities?.total || 0} opportunities found</Typography>
+          <Typography variant="body"><GenericCalendarTiny style={{ verticalAlign: 'middle' }} /> {new Date().toLocaleTimeString()}</Typography>
           {lastSavedName && (
             <div title="Last saved list name" style={{ marginLeft: 'auto' }}>
               <span style={{ padding: '0.25rem 0.5rem', borderRadius: 6, background: '#374151', color: '#d1d5db' }}>
@@ -133,11 +129,19 @@ function Dashboard() {
       </div>
 
       {/* Filters */}
-      <div style={{
-        display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem',
-        padding: '0.75rem', border: '1px solid var(--color-border)', borderRadius: 8,
-        backgroundColor: 'var(--color-surface)'
-      }}>
+      <div
+        className="card"
+        style={{
+          display: 'flex',
+          gap: '0.75rem',
+          alignItems: 'center',
+          marginBottom: '1rem',
+          padding: '0.85rem 1.1rem',
+          backgroundColor: 'var(--color-surface) ',
+          border: '1px solid var(--color-border)',
+          borderLeft: '3px solid #22314a'
+        }}
+      >
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Min Score</span>
           <input
@@ -172,13 +176,9 @@ function Dashboard() {
           />
           <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Approved only</span>
         </label>
-        <button className="btn btn--neutral" onClick={() => refetch()}>
-          Apply
-        </button>
+        <Button appearance="secondary" onClick={() => refetch()}>Apply</Button>
         {(minScore !== undefined || statusFilter || approvedOnly) && (
-          <button className="btn btn--outline" onClick={() => { setMinScore(undefined); setStatusFilter(undefined); setApprovedOnly(false); }}>
-            Clear Filters
-          </button>
+          <Button appearance="outline" onClick={() => { setMinScore(undefined); setStatusFilter(undefined); setApprovedOnly(false); }}>Clear Filters</Button>
         )}
         {(minScore !== undefined || statusFilter || approvedOnly) && (
           <div style={{

@@ -87,14 +87,15 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
     <div
       style={{
         backgroundColor: 'var(--color-surface)',
-        borderRadius: '8px',
+        borderRadius: '10px',
         border: '1px solid var(--color-border)',
         overflow: 'hidden',
+        boxShadow: 'var(--elev-1)'
       }}
     >
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr style={{ backgroundColor: 'var(--color-background)' }}>
+          <tr style={{ backgroundColor: 'var(--color-surface-elev)' }}>
             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
               Symbol
             </th>
@@ -136,10 +137,10 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
               key={opportunity.id}
               style={{
                 borderBottom: '1px solid var(--color-border)',
-                transition: 'background-color 0.2s ease',
+                transition: 'background-color 0.15s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--color-background)'
+                e.currentTarget.style.backgroundColor = '#0f1a2e'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent'
@@ -262,14 +263,17 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
                     color: 'white',
                     textDecoration: 'none',
                     borderRadius: '4px',
-                    fontSize: '0.9rem',
-                    transition: 'background-color 0.2s ease',
+                    fontSize: '0.88rem',
+                    transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
+                    boxShadow: 'var(--elev-1)'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-secondary)'
+                    e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)'
+                    e.currentTarget.style.boxShadow = 'var(--elev-2)'
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--color-primary)'
+                    e.currentTarget.style.boxShadow = 'var(--elev-1)'
                   }}
                 >
                   View Details
