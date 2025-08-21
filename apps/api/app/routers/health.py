@@ -2,7 +2,7 @@
 Health Check Router
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
@@ -45,7 +45,7 @@ async def health_check(
     """
     return HealthResponse(
         status="healthy" if db_status and redis_status else "degraded",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         version="0.1.0",
         environment="development" if settings.DEBUG else "production",
         database_connected=db_status,

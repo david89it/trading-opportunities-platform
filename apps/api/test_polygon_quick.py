@@ -2,8 +2,10 @@
 """Quick test of Polygon client functionality"""
 
 import asyncio
+import pytest
 from app.services.polygon_client import PolygonClient
 
+@pytest.mark.asyncio
 async def test_polygon_client():
     """Test the Polygon client with fixture data"""
     print("🧪 Testing Polygon.io client...")

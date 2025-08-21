@@ -55,7 +55,7 @@ pnpm install
 docker-compose -f docker-compose.dev.yml up -d redis postgres
 ```
 
-3. **Start the API server**:
+3. **Start the API server** (Python 3.11):
 ```bash
 cd apps/api
 poetry install
@@ -63,6 +63,12 @@ poetry run uvicorn app.main:app --reload
 ```
 
 4. **Start the web development server**:
+5. **One-command dev (both)**:
+```bash
+pnpm dev           # runs API and Web together (uses concurrently)
+pnpm dev:api       # API only
+pnpm dev:web       # Web only
+```
 ```bash
 cd apps/web
 pnpm run dev

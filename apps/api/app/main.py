@@ -21,7 +21,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
-# Configure CORS
+# Configure CORS (env-driven). Set ALLOWED_HOSTS via environment for non-dev.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_HOSTS,

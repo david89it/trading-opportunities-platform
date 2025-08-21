@@ -28,37 +28,25 @@ def test_technical_indicators():
     
     # Test EMA calculation
     ema_20 = calculate_ema(prices, 5)  # Use shorter period for test
-    if ema_20:
-        print(f"✅ EMA-5: {ema_20[-1]:.2f}")
-    else:
-        print("❌ EMA calculation failed")
-        return False
+    assert ema_20, "EMA calculation failed"
+    print(f"✅ EMA-5: {ema_20[-1]:.2f}")
     
     # Test RSI calculation  
     rsi = calculate_rsi(prices, 5)
-    if rsi:
-        print(f"✅ RSI-5: {rsi[-1]:.2f}")
-    else:
-        print("❌ RSI calculation failed")
-        return False
+    assert rsi, "RSI calculation failed"
+    print(f"✅ RSI-5: {rsi[-1]:.2f}")
     
     # Test ATR calculation
     atr = calculate_atr(highs, lows, prices, 5)
-    if atr:
-        print(f"✅ ATR-5: {atr[-1]:.2f}")
-    else:
-        print("❌ ATR calculation failed")
-        return False
+    assert atr, "ATR calculation failed"
+    print(f"✅ ATR-5: {atr[-1]:.2f}")
     
     # Test VWAP calculation
     vwap = calculate_vwap(highs, lows, prices, volumes)
-    if vwap:
-        print(f"✅ VWAP: {vwap[-1]:.2f}")
-    else:
-        print("❌ VWAP calculation failed")
-        return False
+    assert vwap, "VWAP calculation failed"
+    print(f"✅ VWAP: {vwap[-1]:.2f}")
     
-    return True
+    # no return; assertions above validate
 
 
 def test_pivot_detection():
@@ -72,24 +60,18 @@ def test_pivot_detection():
     
     # Test pivot high detection
     pivot_high = _find_pivot_high(highs, closes)
-    if pivot_high:
-        print(f"✅ Pivot High: {pivot_high:.2f}")
-    else:
-        print("⚠️ No pivot high found (this is okay)")
+    print(f"✅ Pivot High: {pivot_high:.2f}" if pivot_high else "⚠️ No pivot high found (this is okay)")
     
     # Test pivot low detection
     pivot_low = _find_pivot_low(lows, closes)
-    if pivot_low:
-        print(f"✅ Pivot Low: {pivot_low:.2f}")
-    else:
-        print("⚠️ No pivot low found (this is okay)")
+    print(f"✅ Pivot Low: {pivot_low:.2f}" if pivot_low else "⚠️ No pivot low found (this is okay)")
     
     # Test proximity score
     current_price = 105.0
     proximity_score = _calculate_pivot_proximity_score(current_price, highs, lows, closes)
     print(f"✅ Pivot Proximity Score: {proximity_score:.2f}/10")
     
-    return True
+    # no return; informational only
 
 
 def test_feature_computation():
@@ -136,11 +118,8 @@ def test_feature_computation():
         ]
         
         for feature in required_features:
-            if feature in features:
-                print(f"✅ {feature}: {features[feature]:.3f}")
-            else:
-                print(f"❌ Missing feature: {feature}")
-                return False
+            assert feature in features, f"Missing feature: {feature}"
+            print(f"✅ {feature}: {features[feature]:.3f}")
         
         # Test feature scoring
         scores = score_features(features)
@@ -149,13 +128,13 @@ def test_feature_computation():
         print(f"✅ Volatility Score: {scores.volatility:.2f}/100")
         print(f"✅ Overall Score: {scores.overall:.2f}/100")
         
-        return True
+        # no return; assertions validate success
         
     except Exception as e:
         print(f"❌ Feature computation failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 def main():

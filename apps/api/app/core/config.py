@@ -4,11 +4,16 @@ Application Configuration
 
 from typing import List
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
     
     # API Configuration
     API_HOST: str = Field(default="0.0.0.0", description="API host")
@@ -71,10 +76,7 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = Field(default="INFO", description="Logging level")
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
+    # Config moved to model_config for Pydantic v2 compatibility
 
 
 # Global settings instance

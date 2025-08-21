@@ -113,7 +113,7 @@ def test_risk_calculations():
     print("   ✅ Probability mapping working")
     
     print("\n🎉 ALL RISK CALCULATION TESTS PASSED!")
-    return True
+    # no return; assertions above validate
 
 
 if __name__ == "__main__":

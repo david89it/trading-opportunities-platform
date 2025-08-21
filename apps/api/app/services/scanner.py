@@ -16,7 +16,7 @@ Features computed:
 import math
 import uuid
 import statistics
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Dict, List, Optional, Tuple, Any
 import logging
 
@@ -292,8 +292,8 @@ def compute_features(bars: List[Dict[str, Any]], snapshot: Dict[str, Any],
         "bid_ask_spread_bps": _calculate_spread_bps(snapshot),
         "market_cap": ref_data.get("results", {}).get("market_cap") if ref_data else None,
         
-        # Computed at current time
-        "timestamp": datetime.utcnow().isoformat(),
+        # Computed at current time (timezone-aware UTC)
+        "timestamp": datetime.now(UTC).isoformat(),
         "bars_count": len(bars),
     }
     
@@ -950,7 +950,7 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 opportunity_data = {
                     "id": str(uuid.uuid4()),
                     "symbol": ticker,
-                    "timestamp": datetime.utcnow(),
+                    "timestamp": datetime.now(UTC),
                     "signal_score": signal_score,
                     "scores": scores,
                     "setup": setup,
@@ -1060,7 +1060,7 @@ async def get_opportunity_by_symbol(symbol: str) -> Optional[Opportunity]:
         opportunity_data = {
             "id": str(uuid.uuid4()),
             "symbol": symbol,
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(UTC),
             "signal_score": signal_score,
             "scores": scores,
             "setup": setup,

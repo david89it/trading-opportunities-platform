@@ -14,6 +14,10 @@ from app.services.scanner import compute_features, score_features
 from app.services.polygon_client import get_polygon_client
 
 
+import pytest
+
+
+@pytest.mark.asyncio
 async def test_scanner():
     """Test scanner with real data"""
     print("Testing scanner functionality...")
@@ -24,15 +28,11 @@ async def test_scanner():
         
         # Get snapshot
         snapshot = await client.get_single_ticker_snapshot("AAPL")
-        if not snapshot:
-            print("❌ Failed to get AAPL snapshot")
-            return False
+        assert snapshot is not None, "Failed to get AAPL snapshot"
         
         # Get historical bars
         bars = await client.get_aggregates("AAPL", limit=100)
-        if len(bars) < 50:
-            print("❌ Insufficient historical data")
-            return False
+        assert len(bars) >= 50, "Insufficient historical data"
         
         # Convert to expected format
         bar_dicts = []
@@ -69,9 +69,7 @@ async def test_scanner():
         ]
         
         for feature in required_features:
-            if feature not in features:
-                print(f"❌ Missing feature: {feature}")
-                return False
+            assert feature in features, f"Missing feature: {feature}"
             print(f"✅ {feature}: {features[feature]}")
         
         # Score features
@@ -87,15 +85,15 @@ async def test_scanner():
         print(f"✅ Overall Signal Score: {overall_score:.2f}/10")
         
         print("\n🎉 Scanner test completed successfully!")
-        return True
+        assert True
         
     except Exception as e:
         print(f"❌ Scanner test failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 if __name__ == "__main__":
     result = asyncio.run(test_scanner())
-    sys.exit(0 if result else 1)
+    sys.exit(0)
