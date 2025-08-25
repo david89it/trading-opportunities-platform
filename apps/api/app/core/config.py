@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     SUPABASE_JWKS_URL: str = Field(default="", description="JWKS endpoint, typically ${SUPABASE_URL}/auth/v1/jwks")
     SUPABASE_JWT_ISSUER: str = Field(default="", description="JWT issuer, typically ${SUPABASE_URL}/auth/v1")
     SUPABASE_JWT_AUDIENCE: str = Field(default="authenticated", description="Expected JWT audience")
+
+    # Optional SSL options for Postgres (used when connecting via custom CA)
+    DB_SSLMODE: str = Field(default="", description="Postgres sslmode override (e.g., verify-full)")
+    DB_SSLROOTCERT: str = Field(default="", description="Path to CA certificate (sslrootcert)")
+    DB_SSLCERT: str = Field(default="", description="Client certificate path (optional)")
+    DB_SSLKEY: str = Field(default="", description="Client private key path (optional)")
     
     # Redis Configuration
     REDIS_URL: str = Field(

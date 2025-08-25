@@ -29,7 +29,22 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     # Prefer Supabase direct URL (5432) for migrations; fallback to DATABASE_URL
     url = settings.SUPABASE_DB_DIRECT_URL or settings.DATABASE_URL
-    engine = create_engine(url, pool_pre_ping=True, future=True)
+    connect_args = {}
+    if settings.DB_SSLMODE:
+        connect_args["sslmode"] = settings.DB_SSLMODE
+    if settings.DB_SSLROOTCERT:
+        connect_args["sslrootcert"] = settings.DB_SSLROOTCERT
+    if settings.DB_SSLCERT:
+        connect_args["sslcert"] = settings.DB_SSLCERT
+    if settings.DB_SSLKEY:
+        connect_args["sslkey"] = settings.DB_SSLKEY
+
+    engine = create_engine(
+        url,
+        pool_pre_ping=True,
+        future=True,
+        connect_args=connect_args or None,
+    )
 
     with engine.connect() as connection:
         context.configure(

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "env": {
+    "SUPABASE_URL": "https://qabcxhiwymvswixgumxw.supabase.co",
+    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhYmN4aGl3eW12c3dpeGd1bXh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNjU4NDIsImV4cCI6MjA3MDg0MTg0Mn0.swfbLq80quTqvnsPnGguy56Ec57BvOyojmSmgEHUQHg",
+    "SUPABASE_JWKS_URL": "https://qabcxhiwymvswixgumxw.supabase.co/auth/v1/jwks",
+    "SUPABASE_JWT_ISSUER": "https://qabcxhiwymvswixgumxw.supabase.co/auth/v1",
+    "SUPABASE_JWT_AUDIENCE": "authenticated"
+  }
+}
