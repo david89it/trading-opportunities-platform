@@ -32,6 +32,17 @@ class Settings(BaseSettings):
         default="postgresql://postgres:postgres@localhost:5432/app",
         description="Database connection URL"
     )
+    # Supabase Database (optional)
+    SUPABASE_DB_DIRECT_URL: str = Field(default="", description="Supabase direct Postgres URL (5432, sslmode=require)")
+    SUPABASE_DB_POOL_URL: str = Field(default="", description="Supabase pooled Postgres URL (6543 via pgbouncer)")
+    
+    # Supabase Auth/JWT (optional)
+    SUPABASE_URL: str = Field(default="", description="Supabase project URL, e.g., https://xxx.supabase.co")
+    SUPABASE_ANON_KEY: str = Field(default="", description="Supabase anon key (client-side)")
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(default="", description="Supabase service role key (server only)")
+    SUPABASE_JWKS_URL: str = Field(default="", description="JWKS endpoint, typically ${SUPABASE_URL}/auth/v1/jwks")
+    SUPABASE_JWT_ISSUER: str = Field(default="", description="JWT issuer, typically ${SUPABASE_URL}/auth/v1")
+    SUPABASE_JWT_AUDIENCE: str = Field(default="authenticated", description="Expected JWT audience")
     
     # Redis Configuration
     REDIS_URL: str = Field(

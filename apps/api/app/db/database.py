@@ -10,7 +10,9 @@ from app.core.config import settings
 
 
 # Synchronous engine for simplicity (sufficient for MVP)
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, future=True)
+# Prefer Supabase pooled URL at runtime if provided; fallback to DATABASE_URL
+_db_url = settings.SUPABASE_DB_POOL_URL or settings.DATABASE_URL
+engine = create_engine(_db_url, pool_pre_ping=True, future=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 

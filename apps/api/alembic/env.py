@@ -1,8 +1,8 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine
 from alembic import context
 
-from app.db.database import engine as app_engine
+from app.core.config import settings
 from app.models.opportunity_db import Base
 
 config = context.config
@@ -13,7 +13,8 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
-    url = str(app_engine.url)
+    # Prefer Supabase direct URL (5432) for migrations; fallback to DATABASE_URL
+    url = settings.SUPABASE_DB_DIRECT_URL or settings.DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -26,9 +27,11 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = app_engine
+    # Prefer Supabase direct URL (5432) for migrations; fallback to DATABASE_URL
+    url = settings.SUPABASE_DB_DIRECT_URL or settings.DATABASE_URL
+    engine = create_engine(url, pool_pre_ping=True, future=True)
 
-    with connectable.connect() as connection:
+    with engine.connect() as connection:
         context.configure(
             connection=connection, target_metadata=target_metadata, compare_type=True
         )
