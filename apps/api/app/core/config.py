@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     SUPABASE_JWKS_URL: str = Field(default="", description="JWKS endpoint, typically ${SUPABASE_URL}/auth/v1/jwks")
     SUPABASE_JWT_ISSUER: str = Field(default="", description="JWT issuer, typically ${SUPABASE_URL}/auth/v1")
     SUPABASE_JWT_AUDIENCE: str = Field(default="authenticated", description="Expected JWT audience")
+    SUPABASE_JWT_SECRET: str = Field(default="", description="Supabase JWT secret for HS256 verification")
 
     # Optional SSL options for Postgres (used when connecting via custom CA)
     DB_SSLMODE: str = Field(default="", description="Postgres sslmode override (e.g., verify-full)")

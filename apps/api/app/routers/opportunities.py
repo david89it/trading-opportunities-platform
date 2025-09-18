@@ -38,7 +38,6 @@ async def get_scanner_enabled() -> bool:
 
 # --- Auth helpers (Supabase JWT via Authorization: Bearer <token>) ---
 from fastapi import Header
-import httpx
 import jwt
 from jwt import PyJWKClient
 
@@ -50,26 +49,39 @@ async def get_current_user_id(authorization: Optional[str] = Header(default=None
     if not authorization or not authorization.lower().startswith("bearer "):
         return None
     token = authorization.split(" ", 1)[1]
-    # Fetch JWKS and verify
-    jwks_url = settings.SUPABASE_JWKS_URL or (settings.SUPABASE_URL.rstrip("/") + "/auth/v1/jwks" if settings.SUPABASE_URL else "")
-    if not jwks_url:
-        return None
+    # Try JWKS (RS256) first, then HS256 with SUPABASE_JWT_SECRET as fallback
+    jwks_url = settings.SUPABASE_JWKS_URL or (
+        settings.SUPABASE_URL.rstrip("/") + "/auth/v1/jwks" if settings.SUPABASE_URL else ""
+    )
     try:
-        jwk_client = PyJWKClient(jwks_url)
-        signing_key = jwk_client.get_signing_key_from_jwt(token)
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256"],
-            audience=settings.SUPABASE_JWT_AUDIENCE or None,
-            options={"verify_aud": bool(settings.SUPABASE_JWT_AUDIENCE)},
-            issuer=settings.SUPABASE_JWT_ISSUER or None,
-        )
-        # Supabase places the user id in sub
-        return payload.get("sub")
+        if jwks_url:
+            jwk_client = PyJWKClient(jwks_url)
+            signing_key = jwk_client.get_signing_key_from_jwt(token)
+            payload = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256"],
+                audience=settings.SUPABASE_JWT_AUDIENCE or None,
+                options={"verify_aud": bool(settings.SUPABASE_JWT_AUDIENCE)},
+                issuer=settings.SUPABASE_JWT_ISSUER or None,
+            )
+            return payload.get("sub")
     except Exception as e:
-        logger.warning(f"JWT verification failed: {e}")
-        return None
+        logger.info(f"RS256 JWKS verify failed, trying HS256: {e}")
+    try:
+        if settings.SUPABASE_JWT_SECRET:
+            payload = jwt.decode(
+                token,
+                settings.SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                audience=settings.SUPABASE_JWT_AUDIENCE or None,
+                options={"verify_aud": bool(settings.SUPABASE_JWT_AUDIENCE)},
+                issuer=settings.SUPABASE_JWT_ISSUER or None,
+            )
+            return payload.get("sub")
+    except Exception as e:
+        logger.warning(f"HS256 verify failed: {e}")
+    return None
 
 
 @router.get("/opportunities", response_model=OpportunitiesResponse)
