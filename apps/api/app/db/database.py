@@ -28,7 +28,7 @@ engine = create_engine(
     _db_url,
     pool_pre_ping=True,
     future=True,
-    connect_args=_connect_args or None,
+    connect_args=_connect_args,  # must be a dict; leave empty if none
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)

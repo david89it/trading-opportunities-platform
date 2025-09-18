@@ -3,6 +3,7 @@ SQLAlchemy models for persistence (MVP scope)
 """
 
 from sqlalchemy import Column, String, Float, Integer, DateTime, JSON, Index
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -12,6 +13,8 @@ class OpportunityDB(Base):
     __tablename__ = "opportunities"
 
     id = Column(String, primary_key=True, index=True)
+    # Supabase user identifier (UUID). Nullable for backfilled rows created pre-auth.
+    user_id = Column(UUID(as_uuid=True), index=True, nullable=True)
     symbol = Column(String, index=True, nullable=False)
     ts = Column(DateTime, index=True, nullable=False)
 

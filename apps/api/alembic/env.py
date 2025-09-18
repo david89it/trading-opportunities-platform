@@ -43,7 +43,7 @@ def run_migrations_online() -> None:
         url,
         pool_pre_ping=True,
         future=True,
-        connect_args=connect_args or None,
+        connect_args=connect_args or {},
     )
 
     with engine.connect() as connection:

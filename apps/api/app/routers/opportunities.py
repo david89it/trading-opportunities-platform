@@ -36,6 +36,42 @@ async def get_scanner_enabled() -> bool:
     return settings.USE_POLYGON_LIVE and bool(settings.POLYGON_API_KEY)
 
 
+# --- Auth helpers (Supabase JWT via Authorization: Bearer <token>) ---
+from fastapi import Header
+import httpx
+import jwt
+from jwt import PyJWKClient
+
+
+async def get_current_user_id(authorization: Optional[str] = Header(default=None)) -> Optional[str]:
+    """Resolve Supabase user id (UUID string) from Bearer token. Returns None if missing.
+    In DEBUG, if no token provided, returns None for public endpoints; DB-scoped endpoints will require it.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1]
+    # Fetch JWKS and verify
+    jwks_url = settings.SUPABASE_JWKS_URL or (settings.SUPABASE_URL.rstrip("/") + "/auth/v1/jwks" if settings.SUPABASE_URL else "")
+    if not jwks_url:
+        return None
+    try:
+        jwk_client = PyJWKClient(jwks_url)
+        signing_key = jwk_client.get_signing_key_from_jwt(token)
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience=settings.SUPABASE_JWT_AUDIENCE or None,
+            options={"verify_aud": bool(settings.SUPABASE_JWT_AUDIENCE)},
+            issuer=settings.SUPABASE_JWT_ISSUER or None,
+        )
+        # Supabase places the user id in sub
+        return payload.get("sub")
+    except Exception as e:
+        logger.warning(f"JWT verification failed: {e}")
+        return None
+
+
 @router.get("/opportunities", response_model=OpportunitiesResponse)
 async def get_opportunities(
     limit: int = Query(50, ge=1, le=500, description="Number of opportunities to return"),
@@ -110,6 +146,7 @@ async def persist_opportunities(
     limit: int = Query(20, ge=1, le=100),
     min_score: float = Query(60.0, ge=0, le=100),
     name: Optional[str] = Query(None, description="Optional name for this saved list"),
+    user_id: Optional[str] = Depends(get_current_user_id),
 ):
     """
     Compute top-N opportunities (fixtures/live based on flag) and persist to Postgres.
@@ -126,6 +163,8 @@ async def persist_opportunities(
                     if not db_item:
                         db_item = OpportunityDB(id=opp.id)
                     # Map fields
+                    if user_id:
+                        db_item.user_id = user_id
                     db_item.symbol = opp.symbol
                     db_item.ts = opp.timestamp
                     db_item.signal_score = opp.signal_score
@@ -166,13 +205,17 @@ async def persist_opportunities(
 async def get_recent_opportunities(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    user_id: Optional[str] = Depends(get_current_user_id),
 ):
     """
     Read recent opportunities from Postgres (if present), ordered by timestamp desc.
     """
     try:
         with get_db_session() as db:
-            q = db.query(OpportunityDB).order_by(OpportunityDB.ts.desc()).offset(offset).limit(limit)
+            q = db.query(OpportunityDB)
+            if user_id:
+                q = q.filter(OpportunityDB.user_id == user_id)
+            q = q.order_by(OpportunityDB.ts.desc()).offset(offset).limit(limit)
             rows = q.all()
             # Map DB rows to API model
             def _row_to_api(row: OpportunityDB):
