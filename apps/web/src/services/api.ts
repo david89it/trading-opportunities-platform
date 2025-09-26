@@ -1,5 +1,6 @@
 import { OpportunitiesResponse, Opportunity } from '@alpha-scanner/shared';
 import { mockApi } from './mockApi';
+import { getAuthHeader } from './supabaseClient'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true' || false; // Use live API by default
@@ -24,7 +25,11 @@ const api = {
       });
     }
     
-    const response = await fetch(url.toString());
+    const response = await fetch(url.toString(), {
+      headers: {
+        ...(await getAuthHeader()),
+      },
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch opportunities');
     }
@@ -36,7 +41,11 @@ const api = {
       return mockApi.getOpportunity(symbol);
     }
     
-    const response = await fetch(`${API_BASE_URL}/opportunities/${symbol}`);
+    const response = await fetch(`${API_BASE_URL}/opportunities/${symbol}`, {
+      headers: {
+        ...(await getAuthHeader()),
+      },
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch opportunity for ${symbol}`);
     }
@@ -60,7 +69,12 @@ const api = {
       });
     }
     
-    const response = await fetch(url.toString(), { method: 'POST' });
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        ...(await getAuthHeader()),
+      },
+    });
     if (!response.ok) {
       throw new Error('Failed to run scan preview');
     }
@@ -72,7 +86,11 @@ const api = {
       return mockApi.getHealth();
     }
     
-    const response = await fetch(`${API_BASE_URL}/health`);
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      headers: {
+        ...(await getAuthHeader()),
+      },
+    });
     if (!response.ok) {
       throw new Error('Failed to fetch health status');
     }
@@ -87,7 +105,12 @@ const api = {
         if (value !== undefined) url.searchParams.append(key, value.toString())
       })
     }
-    const response = await fetch(url.toString(), { method: 'POST' })
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        ...(await getAuthHeader()),
+      },
+    })
     if (!response.ok) {
       throw new Error('Failed to persist opportunities')
     }
@@ -101,7 +124,11 @@ const api = {
         if (value !== undefined) url.searchParams.append(key, value.toString())
       })
     }
-    const response = await fetch(url.toString())
+    const response = await fetch(url.toString(), {
+      headers: {
+        ...(await getAuthHeader()),
+      },
+    })
     if (!response.ok) {
       throw new Error('Failed to fetch recent opportunities')
     }
@@ -109,7 +136,11 @@ const api = {
   },
 
   getLastSavedListName: async (): Promise<{ name?: string | null }> => {
-    const response = await fetch(`${API_BASE_URL}/opportunities/last-list`)
+    const response = await fetch(`${API_BASE_URL}/opportunities/last-list`, {
+      headers: {
+        ...(await getAuthHeader()),
+      },
+    })
     if (!response.ok) throw new Error('Failed to fetch last saved list name')
     return response.json()
   },
