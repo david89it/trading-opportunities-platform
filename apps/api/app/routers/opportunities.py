@@ -84,6 +84,13 @@ async def get_current_user_id(authorization: Optional[str] = Header(default=None
     return None
 
 
+async def require_current_user_id(user_id: Optional[str] = Depends(get_current_user_id)) -> str:
+    """Dependency that enforces authentication and returns the current user's id."""
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return user_id
+
+
 @router.get("/opportunities", response_model=OpportunitiesResponse)
 async def get_opportunities(
     limit: int = Query(50, ge=1, le=500, description="Number of opportunities to return"),
@@ -158,7 +165,7 @@ async def persist_opportunities(
     limit: int = Query(20, ge=1, le=100),
     min_score: float = Query(60.0, ge=0, le=100),
     name: Optional[str] = Query(None, description="Optional name for this saved list"),
-    user_id: Optional[str] = Depends(get_current_user_id),
+    user_id: str = Depends(require_current_user_id),
 ):
     """
     Compute top-N opportunities (fixtures/live based on flag) and persist to Postgres.
@@ -217,7 +224,7 @@ async def persist_opportunities(
 async def get_recent_opportunities(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    user_id: Optional[str] = Depends(get_current_user_id),
+    user_id: str = Depends(require_current_user_id),
 ):
     """
     Read recent opportunities from Postgres (if present), ordered by timestamp desc.
