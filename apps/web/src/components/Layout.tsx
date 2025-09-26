@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import AuthStatus from './AuthStatus'
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -59,6 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 🧪 API Test
               </Link>
+              <AuthStatus />
             </nav>
           </div>
         </div>

@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import OpportunityDetail from './pages/OpportunityDetail'
 import RiskSandbox from './pages/RiskSandbox'
 import ApiTest from './pages/ApiTest'
+import Auth from './pages/Auth'
 import Layout from './components/Layout'
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/opportunity/:symbol" element={<OpportunityDetail />} />
         <Route path="/risk-sandbox" element={<RiskSandbox />} />
         <Route path="/api-test" element={<ApiTest />} />
+        <Route path="/auth" element={<Auth />} />
       </Routes>
     </Layout>
   )
