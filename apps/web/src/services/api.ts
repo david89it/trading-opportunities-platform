@@ -6,6 +6,31 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true' || false; // Use live API by default
 
 const api = {
+  // Centralized fetch with auth, retries once on 401 then redirects to /auth
+  _fetchWithAuth: async (input: string | URL, init?: RequestInit): Promise<Response> => {
+    const initialHeaders = {
+      ...(await getAuthHeader()),
+      ...(init?.headers || {}),
+    } as HeadersInit
+    let res = await fetch(input, { ...init, headers: initialHeaders })
+    if (res.status !== 401) return res
+    // Retry once in case token just refreshed
+    const retryHeaders = {
+      ...(await getAuthHeader()),
+      ...(init?.headers || {}),
+    } as HeadersInit
+    res = await fetch(input, { ...init, headers: retryHeaders })
+    if (res.status === 401) {
+      // Hard redirect to auth
+      if (typeof window !== 'undefined') {
+        const current = window.location.pathname + window.location.search
+        const next = `/auth?from=${encodeURIComponent(current)}`
+        if (window.location.pathname !== '/auth') window.location.assign(next)
+      }
+    }
+    return res
+  },
+
   getOpportunities: async (params?: {
     limit?: number;
     offset?: number;
@@ -25,11 +50,7 @@ const api = {
       });
     }
     
-    const response = await fetch(url.toString(), {
-      headers: {
-        ...(await getAuthHeader()),
-      },
-    });
+    const response = await api._fetchWithAuth(url.toString());
     if (!response.ok) {
       throw new Error('Failed to fetch opportunities');
     }
@@ -41,11 +62,7 @@ const api = {
       return mockApi.getOpportunity(symbol);
     }
     
-    const response = await fetch(`${API_BASE_URL}/opportunities/${symbol}`, {
-      headers: {
-        ...(await getAuthHeader()),
-      },
-    });
+    const response = await api._fetchWithAuth(`${API_BASE_URL}/opportunities/${symbol}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch opportunity for ${symbol}`);
     }
@@ -69,12 +86,7 @@ const api = {
       });
     }
     
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        ...(await getAuthHeader()),
-      },
-    });
+    const response = await api._fetchWithAuth(url.toString(), { method: 'POST' });
     if (!response.ok) {
       throw new Error('Failed to run scan preview');
     }
@@ -86,11 +98,7 @@ const api = {
       return mockApi.getHealth();
     }
     
-    const response = await fetch(`${API_BASE_URL}/health`, {
-      headers: {
-        ...(await getAuthHeader()),
-      },
-    });
+    const response = await api._fetchWithAuth(`${API_BASE_URL}/health`);
     if (!response.ok) {
       throw new Error('Failed to fetch health status');
     }
@@ -105,12 +113,7 @@ const api = {
         if (value !== undefined) url.searchParams.append(key, value.toString())
       })
     }
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        ...(await getAuthHeader()),
-      },
-    })
+    const response = await api._fetchWithAuth(url.toString(), { method: 'POST' })
     if (!response.ok) {
       throw new Error('Failed to persist opportunities')
     }
@@ -124,11 +127,7 @@ const api = {
         if (value !== undefined) url.searchParams.append(key, value.toString())
       })
     }
-    const response = await fetch(url.toString(), {
-      headers: {
-        ...(await getAuthHeader()),
-      },
-    })
+    const response = await api._fetchWithAuth(url.toString())
     if (!response.ok) {
       throw new Error('Failed to fetch recent opportunities')
     }
@@ -136,11 +135,7 @@ const api = {
   },
 
   getLastSavedListName: async (): Promise<{ name?: string | null }> => {
-    const response = await fetch(`${API_BASE_URL}/opportunities/last-list`, {
-      headers: {
-        ...(await getAuthHeader()),
-      },
-    })
+    const response = await api._fetchWithAuth(`${API_BASE_URL}/opportunities/last-list`)
     if (!response.ok) throw new Error('Failed to fetch last saved list name')
     return response.json()
   },

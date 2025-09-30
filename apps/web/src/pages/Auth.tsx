@@ -14,7 +14,9 @@ export default function Auth() {
       setError('Supabase client not configured')
       return
     }
-    const redirectTo = window.location.origin
+    const params = new URLSearchParams(window.location.search)
+    const from = params.get('from') || '/'
+    const redirectTo = new URL(from, window.location.origin).toString()
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: redirectTo },
