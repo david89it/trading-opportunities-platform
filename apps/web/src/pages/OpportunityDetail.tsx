@@ -6,10 +6,12 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import { useState, useCallback } from 'react'
 import PriceLevelsChart from '../components/PriceLevelsChart'
+import { TrackingModal } from '../components/TrackingModal'
 
 function OpportunityDetail() {
   const { symbol } = useParams<{ symbol: string }>()
   const [copied, setCopied] = useState(false)
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false)
   
   const {
     data: opportunity,
@@ -221,9 +223,36 @@ function OpportunityDetail() {
             >
               {copied ? '✅ Copied' : '📋 Copy Trade Details'}
             </button>
+            <button
+              onClick={() => setIsTrackingModalOpen(true)}
+              className="btn btn--secondary"
+              title="Track signal outcome for calibration"
+            >
+              📊 Track Outcome
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Tracking Modal */}
+      <TrackingModal
+        isOpen={isTrackingModalOpen}
+        onClose={() => setIsTrackingModalOpen(false)}
+        opportunity={{
+          id: opportunity.id,
+          symbol: opportunity.symbol,
+          signal_score: opportunity.signal_score,
+          p_target: opportunity.risk.p_target,
+          entry: opportunity.setup.entry,
+          stop: opportunity.setup.stop,
+          target1: opportunity.setup.target1,
+          rr_ratio: opportunity.setup.rr_ratio,
+        }}
+        onSuccess={() => {
+          // Optionally refetch opportunity data or show success message
+          console.log('Signal outcome tracked successfully');
+        }}
+      />
 
       {/* Price Levels Mini-Chart */}
       <div
