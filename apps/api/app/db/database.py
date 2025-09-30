@@ -3,7 +3,9 @@ Database engine and session management
 """
 
 from contextlib import contextmanager
+from typing import AsyncGenerator
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
@@ -41,5 +43,40 @@ def get_db_session():
         yield db
     finally:
         db.close()
+
+
+# Async engine and session for FastAPI async endpoints
+_async_db_url = (_db_url.replace('postgresql://', 'postgresql+asyncpg://') 
+                 if _db_url.startswith('postgresql://') else _db_url)
+
+async_engine = create_async_engine(
+    _async_db_url,
+    pool_pre_ping=True,
+    future=True,
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependency function for FastAPI async endpoints.
+    Provides an async database session.
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 

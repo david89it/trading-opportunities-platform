@@ -1,25 +1,31 @@
 # Alpha Scanner API
 
-FastAPI backend for the Asymmetric Alpha Scanner & Analytics Platform.
+FastAPI backend for the Alpha Scanner trading analytics platform.
 
-## Setup
+## Quick Start
 
-1. Install dependencies:
 ```bash
+# Install dependencies
 poetry install
-```
 
-2. Start the development server:
-```bash
-poetry run uvicorn app.main:app --reload
+# Run migrations
+alembic upgrade head
+
+# Start the API
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## API Documentation
 
-When running in development mode, API documentation is available at:
+Once running, visit:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## Environment Variables
+## Endpoints
 
-Copy `env.example` to `.env` and configure the required variables.
+- **Health**: `GET /api/v1/health`
+- **Opportunities**: `GET /api/v1/opportunities`
+- **Risk Analysis**: `POST /api/v1/risk/monte-carlo`
+- **Signal Tracking**: `POST /api/v1/tracking/signals`
+- **Trade Journal**: `POST /api/v1/tracking/trades`
+- **Calibration**: `GET /api/v1/tracking/calibration`

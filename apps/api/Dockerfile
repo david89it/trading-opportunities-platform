@@ -24,11 +24,11 @@ RUN poetry config virtualenvs.create false
 
 WORKDIR /app
 
-# Copy Poetry files
-COPY pyproject.toml poetry.lock* ./
+# Copy Poetry files and README
+COPY pyproject.toml poetry.lock* README.md ./
 
-# Install dependencies
-RUN poetry install --only=main && rm -rf $POETRY_CACHE_DIR
+# Install dependencies (without installing the project itself yet)
+RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 
 # Production stage
 FROM python:3.11-slim as production
