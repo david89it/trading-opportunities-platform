@@ -7,6 +7,7 @@ A sophisticated trading analytics platform designed to identify asymmetric risk/
 - **Backend**: FastAPI + Python 3.11 with async patterns
 - **Frontend**: React 18 + TypeScript + Vite 6  
 - **Database**: PostgreSQL with SQLAlchemy ORM
+- **Auth/DB (hosted)**: Supabase (Postgres, Auth JWT, RLS)
 - **Cache**: Redis for high-performance data caching
 - **Data**: Polygon.io API integration
 - **Deployment**: Docker + Docker Compose
@@ -19,6 +20,51 @@ A sophisticated trading analytics platform designed to identify asymmetric risk/
 - Node.js 18+ (for local development)
 - Python 3.11+ (for local development)
 
+### Run Locally (recommended)
+
+1) Install deps
+```bash
+pnpm install
+```
+
+2) Configure environments
+- API env at `apps/api/.env` (required)
+```
+DATABASE_URL="postgresql://<user>:<pass>@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true"
+SUPABASE_DB_POOL_URL="postgresql://<user>:<pass>@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true"
+SUPABASE_DB_DIRECT_URL="postgresql://<user>:<pass>@db.<ref>.supabase.co:5432/postgres?sslmode=require"
+SUPABASE_URL="https://<ref>.supabase.co"
+SUPABASE_JWT_SECRET="<from Supabase settings>"
+SUPABASE_ANON_KEY="<anon key>"
+# Optional
+ALLOWED_HOSTS=["http://127.0.0.1:5173","http://localhost:5173"]
+USE_POLYGON_LIVE=false
+```
+- Web env at `apps/web/.env` (dev-only)
+```
+VITE_SUPABASE_URL="https://<ref>.supabase.co"
+VITE_SUPABASE_ANON_KEY="<anon key>"
+```
+
+3) Start both services (dev)
+```bash
+pnpm dev        # runs API (Uvicorn) and Web (Vite) together
+```
+Web: http://127.0.0.1:5173  ·  API: http://127.0.0.1:8000
+
+4) Sign in and use
+- Open http://127.0.0.1:5173/auth, enter your email, click the magic link.
+- Go to Dashboard, “Save Current List”, then “Load Recent”. Data is user-scoped via RLS.
+
+5) Quick API checks
+```bash
+# Health (public)
+curl -sS http://127.0.0.1:8000/api/v1/health | jq .
+
+# Protected (should be 401 without token)
+curl -i "http://127.0.0.1:8000/api/v1/opportunities/recent?limit=3"
+```
+
 ### Production Deployment
 
 1. **Clone the repository**:
@@ -29,8 +75,8 @@ cd Trader
 
 2. **Set up environment variables**:
 ```bash
-cp env.example .env
-# Edit .env with your Polygon.io API key and other settings
+# Copy and edit envs for API and Web as in the local run section.
+# Ensure ALLOWED_HOSTS contains your real web origin(s).
 ```
 
 3. **Start all services**:
@@ -39,7 +85,7 @@ docker-compose up -d
 ```
 
 4. **Access the application**:
-- Web Dashboard: http://localhost:3000
+- Web Dashboard: http(s)://<your-domain>
 - API Documentation: http://localhost:8000/docs
 - API Health Check: http://localhost:8000/api/v1/health
 
@@ -63,15 +109,16 @@ poetry run uvicorn app.main:app --reload
 ```
 
 4. **Start the web development server**:
+```bash
+cd apps/web
+pnpm run dev
+```
+
 5. **One-command dev (both)**:
 ```bash
 pnpm dev           # runs API and Web together (uses concurrently)
 pnpm dev:api       # API only
 pnpm dev:web       # Web only
-```
-```bash
-cd apps/web
-pnpm run dev
 ```
 
 ## 📊 Features
@@ -131,6 +178,8 @@ docker-compose build         # Rebuild images
 - `GET /api/v1/health` - Health check
 - `GET /api/v1/opportunities` - List trading opportunities
 - `GET /api/v1/opportunities/{symbol}` - Get specific opportunity
+ - `POST /api/v1/opportunities/persist` - Compute & persist opportunities (auth required)
+ - `GET /api/v1/opportunities/recent` - Read recent (auth required, user-scoped)
 
 ## 🛡️ Risk Management
 
