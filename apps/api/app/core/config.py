@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     
     # CORS Configuration
     ALLOWED_HOSTS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
+        default=["http://127.0.0.1:5173", "http://localhost:5173"],
         description="Allowed CORS origins"
     )
     
