@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.routers import health, opportunities, risk
+from app.routers import health, opportunities, risk, tracking
 from sqlalchemy import MetaData
 from app.db.database import engine
 from app.models.opportunity_db import Base as ORMBase
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(opportunities.router, prefix="/api/v1", tags=["opportunities"])
 app.include_router(risk.router, prefix="/api/v1/risk", tags=["risk"])
+app.include_router(tracking.router, tags=["tracking"])
 
 # Tables managed by Alembic migrations (see apps/api/alembic)
 
