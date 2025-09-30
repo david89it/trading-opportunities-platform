@@ -24,7 +24,7 @@ const api = {
       // Hard redirect to auth
       if (typeof window !== 'undefined') {
         const current = window.location.pathname + window.location.search
-        const next = `/auth?from=${encodeURIComponent(current)}`
+        const next = `/auth?from=${encodeURIComponent(current)}&reason=expired`
         if (window.location.pathname !== '/auth') window.location.assign(next)
       }
     }

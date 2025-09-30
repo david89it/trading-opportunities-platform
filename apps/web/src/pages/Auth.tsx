@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { supabase } from '../services/supabaseClient'
 
 export default function Auth() {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  
+  const reason = useMemo(() => new URLSearchParams(window.location.search).get('reason'), [])
 
   const sendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,6 +30,11 @@ export default function Auth() {
   return (
     <div style={{ maxWidth: 420, margin: '4rem auto', padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}>
       <h2 style={{ marginTop: 0 }}>Sign in</h2>
+      {reason === 'expired' && (
+        <div className="error" style={{ marginBottom: '0.75rem' }}>
+          Your session expired. Please sign in again.
+        </div>
+      )}
       <p style={{ color: 'var(--color-text-secondary)' }}>Use your email to receive a magic link.</p>
       <form onSubmit={sendMagicLink} style={{ display: 'grid', gap: '0.75rem' }}>
         <input
