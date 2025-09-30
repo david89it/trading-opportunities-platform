@@ -19,6 +19,7 @@ import statistics
 from datetime import datetime, timedelta, UTC
 from typing import Dict, List, Optional, Tuple, Any
 import logging
+import asyncio
 
 from app.models.opportunities import (
     Opportunity, FeatureScores, TradeSetup, GuardrailStatus, RiskMetrics
@@ -27,6 +28,11 @@ from app.services.polygon_client import get_polygon_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Free-tier optimization: Simple in-memory cache for scan results
+# Since free tier only gets end-of-day data, cache is valid until market close + 1 hour
+_scan_cache: Dict[str, Tuple[List[Opportunity], datetime]] = {}
+_CACHE_TTL_HOURS = 12  # Cache for 12 hours (data only updates end-of-day)
 
 # Feature computation constants
 EMA_PERIODS = {"fast": 20, "medium": 50, "slow": 200}
@@ -806,6 +812,7 @@ def check_guardrails(opportunity: Dict[str, Any]) -> Tuple[GuardrailStatus, Opti
 async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Opportunity]:
     """
     Scan market for trading opportunities.
+    Free-tier optimized: Uses fixed watchlist and caches results for 12 hours.
     
     Args:
         limit: Maximum number of opportunities to return
@@ -816,88 +823,77 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
     """
     logger.info(f"Scanning for opportunities - limit: {limit}, min_score: {min_score}")
     
+    # Check cache first (free-tier optimization)
+    cache_key = f"scan_{limit}_{min_score}"
+    if cache_key in _scan_cache:
+        cached_opps, cache_time = _scan_cache[cache_key]
+        age = datetime.now(UTC) - cache_time
+        if age.total_seconds() < (_CACHE_TTL_HOURS * 3600):
+            logger.info(f"Returning cached scan results (age: {age.total_seconds()/3600:.1f}h)")
+            return cached_opps
+    
     try:
-        # Get market snapshots for liquid universe
+        # Free-tier: Use fixed watchlist instead of market-wide scan
+        # This respects 5 req/min limit (10 symbols = 11 API calls total, takes ~2.5 min)
         client = await get_polygon_client()
-        snapshots = await client.get_full_market_snapshot()
+        watchlist = settings.POLYGON_WATCHLIST[:10]  # Limit to 10 symbols max
+        logger.info(f"Free-tier scan: analyzing {len(watchlist)} watchlist symbols")
         
-        # Filter for liquid stocks
+        # For free tier, skip market snapshot and use watchlist directly
         liquid_snapshots = []
-        for snapshot in snapshots:
-            # Handle pydantic model vs dict
-            day_data = (
-                snapshot.day if hasattr(snapshot, "day") else snapshot.get("day", {})
-            )
-            volume = (day_data.get("v", 0) if isinstance(day_data, dict) else day_data.get("v", 0))
-            price = (day_data.get("c", 0) if isinstance(day_data, dict) else day_data.get("c", 0))
-            
-            # Basic liquidity filters
-            if volume > 1000000 and price > 5.0 and price < 500.0:
-                liquid_snapshots.append(snapshot)
-
-        # Free-tier fallback: if no snapshots (or filtered empty), build minimal snapshots from a watchlist
-        if not liquid_snapshots:
-            watchlist = ["AAPL", "MSFT", "TSLA"]
-            fallback = []
-            for sym in watchlist:
-                try:
-                    bars_objects = await client.get_aggregates(
-                        ticker=sym,
-                        multiplier=1,
-                        timespan="day",
-                        limit=200,
-                    )
-                    if not bars_objects:
-                        continue
-                    last = bars_objects[-1]
-                    snapshot_dict = {
-                        "ticker": sym,
-                        "day": {"c": last.c, "v": last.v},
-                        "lastQuote": {"b": last.c * 0.999, "a": last.c * 1.001},
-                        "prevDay": {"c": bars_objects[-2].c if len(bars_objects) > 1 else last.c},
-                    }
-                    fallback.append(snapshot_dict)
-                except Exception:
+        for symbol in watchlist:
+            try:
+                # Get historical bars for this symbol
+                bars_objects = await client.get_aggregates(
+                    ticker=symbol,
+                    multiplier=1,
+                    timespan="day",
+                    limit=200
+                )
+                if not bars_objects or len(bars_objects) < 50:
                     continue
-            liquid_snapshots = fallback
+                    
+                # Build snapshot from last bar
+                last_bar = bars_objects[-1]
+                snapshot_dict = {
+                    "ticker": symbol,
+                    "day": {"c": last_bar.c, "v": last_bar.v, "h": last_bar.h, "l": last_bar.l},
+                    "lastQuote": {"b": last_bar.c * 0.999, "a": last_bar.c * 1.001},
+                    "prevDay": {"c": bars_objects[-2].c if len(bars_objects) > 1 else last_bar.c},
+                }
+                liquid_snapshots.append(snapshot_dict)
+            except Exception as e:
+                logger.warning(f"Failed to fetch data for {symbol}: {e}")
+                continue
 
-        logger.info(f"Found {len(liquid_snapshots)} liquid stocks to analyze")
+        logger.info(f"Found {len(liquid_snapshots)} symbols with data")
         
         opportunities = []
         
-        # Analyze each liquid stock (sample more in DEBUG to ensure candidates)
-        sample_count = limit * (4 if settings.DEBUG else 2)
-        for snapshot in liquid_snapshots[:sample_count]:
+        # Analyze each symbol (we already have bars and snapshots from watchlist loop)
+        for symbol in watchlist:
             try:
-                # Normalize snapshot to dict
-                if hasattr(snapshot, "model_dump"):
-                    snapshot_dict = snapshot.model_dump()
-                elif isinstance(snapshot, dict):
-                    snapshot_dict = snapshot
-                else:
-                    # Fallback for pydantic object without model_dump
-                    snapshot_dict = {
-                        "ticker": getattr(snapshot, "ticker", None),
-                        "day": getattr(snapshot, "day", {}),
-                        "lastQuote": getattr(snapshot, "last_quote", None),
-                        "prevDay": getattr(snapshot, "prev_day", None),
-                    }
-                ticker = snapshot_dict["ticker"]
-                
-                # Get historical data
+                # Get bars again (cached by polygon client with 12s delay for rate limiting)
                 bars_objects = await client.get_aggregates(
-                    ticker=ticker,
+                    ticker=symbol,
                     multiplier=1,
                     timespan="day",
-                    limit=200  # Need enough history for indicators
+                    limit=200
                 )
-                # Convert AggregateBar objects to dicts expected by compute_features
-                bars = [
-                    {"o": b.o, "h": b.h, "l": b.l, "c": b.c, "v": b.v}
-                    for b in bars_objects
-                ]
-                if len(bars) < 50:
+                if not bars_objects or len(bars_objects) < 50:
                     continue
+                    
+                # Convert to dicts for feature computation
+                bars = [{"o": b.o, "h": b.h, "l": b.l, "c": b.c, "v": b.v} for b in bars_objects]
+                
+                # Build snapshot dict
+                last_bar = bars_objects[-1]
+                snapshot_dict = {
+                    "ticker": symbol,
+                    "day": {"c": last_bar.c, "v": last_bar.v, "h": last_bar.h, "l": last_bar.l},
+                    "lastQuote": {"b": last_bar.c * 0.999, "a": last_bar.c * 1.001},
+                    "prevDay": {"c": bars_objects[-2].c if len(bars_objects) > 1 else last_bar.c},
+                }
                 
                 # Compute features
                 features = compute_features(bars, snapshot_dict)
@@ -992,6 +988,11 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
         final_opportunities = opportunities[:limit]
         
         logger.info(f"Generated {len(final_opportunities)} opportunities")
+        
+        # Cache the results (free-tier optimization)
+        _scan_cache[cache_key] = (final_opportunities, datetime.now(UTC))
+        logger.info(f"Cached scan results for {_CACHE_TTL_HOURS}h")
+        
         return final_opportunities
         
     except Exception as e:

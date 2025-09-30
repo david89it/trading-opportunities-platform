@@ -68,6 +68,10 @@ class Settings(BaseSettings):
         default=False, 
         description="Use live Polygon.io data (false = use fixtures)"
     )
+    POLYGON_WATCHLIST: List[str] = Field(
+        default=["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA", "META", "AMZN", "AMD", "NFLX", "UBER"],
+        description="Fixed watchlist for free-tier scanning (max 10 symbols to respect 5 req/min limit)"
+    )
     
     # Risk Management Parameters
     RISK_PCT_PER_TRADE: float = Field(
