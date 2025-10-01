@@ -17,7 +17,6 @@ from app.models.opportunities import (
     TradeSetup,
     RiskMetrics,
 )
-from app.services.mock_data import get_mock_opportunities, generate_mock_opportunity
 from app.db.database import get_db_session
 from app.models.opportunity_db import OpportunityDB, Base as _Base  # noqa: F401
 from app.services.scanner import scan_opportunities, get_opportunity_by_symbol as scan_opportunity_by_symbol
@@ -130,34 +129,14 @@ async def get_opportunities(
             )
             
         except Exception as e:
-            logger.error(f"Error in live scanner, falling back to mock data: {e}")
-            # Fall back to mock data on error
-    
-    # Use mock data (development mode or fallback)
-    logger.info("Using mock data for opportunities")
-    opportunities = get_mock_opportunities()
-    
-    # Apply filters to mock data (normalize threshold if mock uses 0-10 scale in DEBUG)
-    threshold = min_score
-    if threshold is not None and opportunities and max(o.signal_score for o in opportunities) <= 10 and settings.DEBUG:
-        threshold = threshold / 10.0
-    if threshold is not None:
-        opportunities = [opp for opp in opportunities if opp.signal_score >= threshold]
-    
-    if status:
-        opportunities = [opp for opp in opportunities if opp.guardrail_status.value == status]
-    
-    # Apply pagination
-    total = len(opportunities)
-    opportunities = opportunities[offset:offset + limit]
-    
-    return OpportunitiesResponse(
-        opportunities=opportunities,
-        total=total,
-        limit=limit,
-        offset=offset,
-        timestamp=datetime.now(timezone.utc)
-    )
+            logger.error(f"Error in live scanner: {e}")
+            raise HTTPException(status_code=500, detail=f"Scanner error: {str(e)}")
+    else:
+        # Scanner not enabled
+        raise HTTPException(
+            status_code=503, 
+            detail="Scanner not enabled. Set USE_POLYGON_LIVE=true and configure POLYGON_API_KEY"
+        )
 
 
 @router.post("/opportunities/persist", response_model=dict)
@@ -328,18 +307,14 @@ async def get_opportunity_by_symbol(
                 )
                 
         except Exception as e:
-            logger.error(f"Error in live scanner for {symbol}, falling back to mock data: {e}")
-            # Fall back to mock data on error
-    
-    # Use mock data (development mode or fallback)
-    logger.info(f"Using mock data for {symbol}")
-    opportunities = get_mock_opportunities()
-    
-    for opp in opportunities:
-        if opp.symbol == symbol:
-            return opp
-    
-    raise HTTPException(status_code=404, detail=f"Opportunity not found for symbol: {symbol}")
+            logger.error(f"Error in live scanner for {symbol}: {e}")
+            raise HTTPException(status_code=500, detail=f"Scanner error: {str(e)}")
+    else:
+        # Scanner not enabled
+        raise HTTPException(
+            status_code=503, 
+            detail="Scanner not enabled. Set USE_POLYGON_LIVE=true and configure POLYGON_API_KEY"
+        )
 
 
 @router.post("/scan/preview", response_model=OpportunitiesResponse)
@@ -371,31 +346,6 @@ async def scan_preview(
         opportunities = await scan_opportunities(limit=limit, min_score=min_score)
         logger.info(f"Scan completed - found {len(opportunities)} opportunities")
 
-        # Free-tier/dev resilience: if scan returns empty, optionally fall back to mock (DEBUG only)
-        if not opportunities and settings.DEBUG:
-            logger.info("Scanner returned no items; serving mock preview fallback (DEBUG)")
-            fallback = get_mock_opportunities()
-            if not fallback:
-                # Ensure at least a few items for demo/MVP
-                seed = [
-                    ("AAPL", 150.0, 200.0),
-                    ("MSFT", 280.0, 380.0),
-                    ("TSLA", 180.0, 320.0),
-                ]
-                fallback = [generate_mock_opportunity(s, lo, hi) for s, lo, hi in seed]
-            # Mock generator uses a 0-10 score scale; normalize threshold accordingly
-            threshold = min_score
-            if fallback and max(o.signal_score for o in fallback) <= 10:
-                threshold = min_score / 10.0
-            fallback = [opp for opp in fallback if opp.signal_score >= threshold][:limit]
-            return OpportunitiesResponse(
-                opportunities=fallback,
-                total=len(fallback),
-                limit=limit,
-                offset=0,
-                timestamp=datetime.now(timezone.utc)
-            )
-
         return OpportunitiesResponse(
             opportunities=opportunities,
             total=len(opportunities),
@@ -406,25 +356,4 @@ async def scan_preview(
 
     except Exception as e:
         logger.error(f"Error in scan preview: {e}")
-        if settings.DEBUG:
-            # Fall back to mock data if scanner errors (DEBUG only)
-            fallback = get_mock_opportunities()
-            if not fallback:
-                seed = [
-                    ("AAPL", 150.0, 200.0),
-                    ("MSFT", 280.0, 380.0),
-                    ("TSLA", 180.0, 320.0),
-                ]
-                fallback = [generate_mock_opportunity(s, lo, hi) for s, lo, hi in seed]
-            threshold = min_score
-            if fallback and max(o.signal_score for o in fallback) <= 10:
-                threshold = min_score / 10.0
-            fallback = [opp for opp in fallback if opp.signal_score >= threshold][:limit]
-            return OpportunitiesResponse(
-                opportunities=fallback,
-                total=len(fallback),
-                limit=limit,
-                offset=0,
-                timestamp=datetime.now(timezone.utc)
-            )
-        raise HTTPException(status_code=500, detail=f"Scan preview failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scan preview failed: {str(e)}")
