@@ -24,6 +24,31 @@ function OpportunityDetail() {
     enabled: !!symbol,
   })
 
+  // MUST be called before any conditional returns (Rules of Hooks)
+  const copyTradeDetails = useCallback(() => {
+    if (!opportunity) return
+    const lines = [
+      `Symbol: ${opportunity.symbol}`,
+      `Timestamp: ${new Date(opportunity.timestamp).toISOString()}`,
+      `Entry: ${opportunity.setup.entry.toFixed(2)}`,
+      `Stop: ${opportunity.setup.stop.toFixed(2)}`,
+      `Target 1: ${opportunity.setup.target1.toFixed(2)}`,
+      `${opportunity.setup.target2 ? `Target 2: ${opportunity.setup.target2.toFixed(2)}` : ''}`,
+      `R:R: ${opportunity.setup.rr_ratio.toFixed(2)}:1`,
+      `Position: $${opportunity.setup.position_size_usd.toFixed(2)} (${opportunity.setup.position_size_shares} shares)`,
+      `P(Target): ${(opportunity.risk.p_target * 100).toFixed(2)}%`,
+      `Net Expected R: ${opportunity.risk.net_expected_r.toFixed(3)}R`,
+      `Costs: ${opportunity.risk.costs_r.toFixed(3)}R`,
+      `Slippage: ${opportunity.risk.slippage_bps.toFixed(1)} bps`,
+      `Status: ${opportunity.guardrail_status}${opportunity.guardrail_reason ? ` (${opportunity.guardrail_reason})` : ''}`,
+    ].filter(Boolean)
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }).catch(() => {})
+  }, [opportunity])
+
+  // Early returns AFTER all hooks
   if (isLoading) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -57,29 +82,6 @@ function OpportunityDetail() {
       </div>
     )
   }
-
-  const copyTradeDetails = useCallback(() => {
-    if (!opportunity) return
-    const lines = [
-      `Symbol: ${opportunity.symbol}`,
-      `Timestamp: ${new Date(opportunity.timestamp).toISOString()}`,
-      `Entry: ${opportunity.setup.entry.toFixed(2)}`,
-      `Stop: ${opportunity.setup.stop.toFixed(2)}`,
-      `Target 1: ${opportunity.setup.target1.toFixed(2)}`,
-      `${opportunity.setup.target2 ? `Target 2: ${opportunity.setup.target2.toFixed(2)}` : ''}`,
-      `R:R: ${opportunity.setup.rr_ratio.toFixed(2)}:1`,
-      `Position: $${opportunity.setup.position_size_usd.toFixed(2)} (${opportunity.setup.position_size_shares} shares)`,
-      `P(Target): ${(opportunity.risk.p_target * 100).toFixed(2)}%`,
-      `Net Expected R: ${opportunity.risk.net_expected_r.toFixed(3)}R`,
-      `Costs: ${opportunity.risk.costs_r.toFixed(3)}R`,
-      `Slippage: ${opportunity.risk.slippage_bps.toFixed(1)} bps`,
-      `Status: ${opportunity.guardrail_status}${opportunity.guardrail_reason ? ` (${opportunity.guardrail_reason})` : ''}`,
-    ].filter(Boolean)
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    }).catch(() => {})
-  }, [opportunity])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
