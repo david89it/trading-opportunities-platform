@@ -48,13 +48,15 @@ services:
       target: production
     container_name: alpha-scanner-api
     restart: unless-stopped
+    env_file:
+      - ./apps/api/.env
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - DEBUG=false
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/app
-      - USE_POLYGON_LIVE=false
+      - USE_POLYGON_LIVE=true
       - POLYGON_API_KEY=${POLYGON_API_KEY:-}
       - RISK_PCT_PER_TRADE=0.005
       - MAX_HEAT_PCT=0.02
