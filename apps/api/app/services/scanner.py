@@ -979,8 +979,7 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 logger.debug(f"Generated opportunity for {ticker}: score={signal_score:.2f}, net_r={net_r:.3f}")
                 
             except Exception as e:
-                sym = snapshot.ticker if hasattr(snapshot, 'ticker') else (snapshot.get('ticker') if isinstance(snapshot, dict) else 'unknown')
-                logger.warning(f"Failed to analyze {sym}: {e}")
+                logger.warning(f"Failed to analyze {symbol}: {e}")
                 continue
         
         # Sort by signal score and return top opportunities

@@ -57,7 +57,6 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/app
       - USE_POLYGON_LIVE=true
-      - POLYGON_API_KEY=${POLYGON_API_KEY:-}
       - RISK_PCT_PER_TRADE=0.005
       - MAX_HEAT_PCT=0.02
       - DAILY_STOP_R=-2.0
