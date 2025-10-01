@@ -998,9 +998,38 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
         logger.error(f"Error scanning opportunities: {e}")
         raise
 
+def get_opportunity_from_cache(symbol: str) -> Optional[Opportunity]:
+    """
+    Get opportunity from cached scan results (free-tier friendly).
+    
+    Args:
+        symbol: Stock ticker symbol
+        
+    Returns:
+        Opportunity object from cache or None if not found
+    """
+    symbol = symbol.upper()
+    
+    # Check all cache entries for this symbol
+    for cache_key, (opportunities, cache_time) in _scan_cache.items():
+        age = datetime.now(UTC) - cache_time
+        if age.total_seconds() < (_CACHE_TTL_HOURS * 3600):
+            # Cache is still fresh, search for symbol
+            for opp in opportunities:
+                if opp.symbol == symbol:
+                    logger.info(f"Found {symbol} in cache (age: {age.total_seconds()/3600:.1f}h)")
+                    return opp
+    
+    logger.info(f"{symbol} not found in cache")
+    return None
+
+
 async def get_opportunity_by_symbol(symbol: str) -> Optional[Opportunity]:
     """
     Get detailed opportunity analysis for a specific symbol.
+    
+    DEPRECATED: This function requires Polygon's single-ticker snapshot API
+    which is not available on the free tier. Use get_opportunity_from_cache() instead.
     
     Args:
         symbol: Stock ticker symbol

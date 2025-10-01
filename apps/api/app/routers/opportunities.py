@@ -19,7 +19,7 @@ from app.models.opportunities import (
 )
 from app.db.database import get_db_session
 from app.models.opportunity_db import OpportunityDB, Base as _Base  # noqa: F401
-from app.services.scanner import scan_opportunities, get_opportunity_by_symbol as scan_opportunity_by_symbol
+from app.services.scanner import scan_opportunities, get_opportunity_from_cache
 from app.core.config import settings
 
 router = APIRouter()
@@ -284,31 +284,33 @@ async def get_opportunity_by_symbol(
     scanner_enabled: bool = Depends(get_scanner_enabled)
 ):
     """
-    Get detailed opportunity data for a specific symbol.
+    Get detailed opportunity data for a specific symbol from cached scan results.
     
-    Returns comprehensive analysis including technical features, trade setup,
-    probability estimates, and risk calculations for the given symbol.
+    Free-tier friendly: Uses cached scan data instead of making new API calls.
+    If the symbol is not in the latest scan, returns 404.
     """
     
     symbol = symbol.upper()
     
     if scanner_enabled:
         try:
-            # Use live scanner
-            logger.info(f"Using live scanner for {symbol}")
-            opportunity = await scan_opportunity_by_symbol(symbol)
+            # Use cached scan results (free-tier friendly)
+            logger.info(f"Looking up {symbol} in cached scan results")
+            opportunity = get_opportunity_from_cache(symbol)
             
             if opportunity:
                 return opportunity
             else:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"No viable opportunity found for symbol: {symbol}"
+                    detail=f"Symbol {symbol} not found in latest scan results. Try running 'Scan Now' to update."
                 )
                 
+        except HTTPException:
+            raise  # Re-raise HTTP exceptions as-is
         except Exception as e:
-            logger.error(f"Error in live scanner for {symbol}: {e}")
-            raise HTTPException(status_code=500, detail=f"Scanner error: {str(e)}")
+            logger.error(f"Error retrieving {symbol} from cache: {e}")
+            raise HTTPException(status_code=500, detail=f"Cache lookup error: {str(e)}")
     else:
         # Scanner not enabled
         raise HTTPException(
