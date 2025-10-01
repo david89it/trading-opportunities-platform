@@ -13,6 +13,18 @@ function Dashboard() {
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [riskFilter, setRiskFilter] = useState<string>('all')
+  
+  // Portfolio size (persisted in localStorage)
+  const [portfolioSize, setPortfolioSize] = useState<number>(() => {
+    const saved = localStorage.getItem('portfolioSize')
+    return saved ? Number(saved) : 10000 // Default $10,000
+  })
+
+  // Save to localStorage when changed
+  const handlePortfolioSizeChange = (value: number) => {
+    setPortfolioSize(value)
+    localStorage.setItem('portfolioSize', value.toString())
+  }
 
   const {
     data: opportunities,
@@ -25,21 +37,43 @@ function Dashboard() {
     refetchInterval: 30000, // Refetch every 30 seconds
   })
 
-  // Client-side filtering for better UX
-  const filteredOpportunities = opportunities?.opportunities.filter(opp => {
-    // Status filter
-    if (statusFilter !== 'all' && opp.guardrail_status !== statusFilter) return false
-    
-    // Risk filter (based on volatility)
-    if (riskFilter !== 'all') {
-      const volatility = opp.scores.volatility as number
-      if (riskFilter === 'low' && volatility >= 50) return false
-      if (riskFilter === 'medium' && (volatility < 30 || volatility >= 70)) return false
-      if (riskFilter === 'high' && volatility < 70) return false
-    }
-    
-    return true
-  }) || []
+  // Client-side filtering and position size recalculation
+  const filteredOpportunities = (opportunities?.opportunities || [])
+    .filter(opp => {
+      // Status filter
+      if (statusFilter !== 'all' && opp.guardrail_status !== statusFilter) return false
+      
+      // Risk filter (based on volatility)
+      if (riskFilter !== 'all') {
+        const volatility = opp.scores.volatility as number
+        if (riskFilter === 'low' && volatility >= 50) return false
+        if (riskFilter === 'medium' && (volatility < 30 || volatility >= 70)) return false
+        if (riskFilter === 'high' && volatility < 70) return false
+      }
+      
+      return true
+    })
+    .map(opp => {
+      // Recalculate position size based on user's portfolio size
+      const RISK_PCT = 0.005 // 0.5% risk per trade (same as backend)
+      const riskPerShare = Math.abs(opp.setup.entry - opp.setup.stop)
+      
+      if (riskPerShare === 0) return opp // Avoid division by zero
+      
+      const maxRiskDollars = portfolioSize * RISK_PCT
+      const recalculatedShares = Math.floor(maxRiskDollars / riskPerShare)
+      const recalculatedUsd = recalculatedShares * opp.setup.entry
+      
+      // Return opportunity with recalculated position sizing
+      return {
+        ...opp,
+        setup: {
+          ...opp.setup,
+          position_size_shares: recalculatedShares,
+          position_size_usd: recalculatedUsd,
+        }
+      }
+    })
 
   const preview = useMutation({
     mutationFn: () => api.scanPreview({ limit: 20, min_score: 35 }),
@@ -248,6 +282,42 @@ function Dashboard() {
             <option value="medium">Medium (Balanced)</option>
             <option value="high">High (Aggressive)</option>
           </select>
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>Portfolio Size</span>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <span style={{ 
+              position: 'absolute', 
+              left: '0.7rem', 
+              top: '50%', 
+              transform: 'translateY(-50%)',
+              color: 'var(--color-text-secondary)',
+              fontSize: '0.9rem',
+              pointerEvents: 'none'
+            }}>
+              $
+            </span>
+            <input
+              type="number"
+              min={1000}
+              max={10000000}
+              step={1000}
+              value={portfolioSize}
+              onChange={(e) => handlePortfolioSizeChange(Number(e.currentTarget.value) || 10000)}
+              style={{ 
+                padding: '0.5rem 0.7rem 0.5rem 1.5rem', 
+                borderRadius: 6, 
+                border: '1px solid var(--color-border)', 
+                background: 'var(--color-surface-elev)', 
+                color: 'var(--color-text-primary)',
+                fontSize: '0.9rem',
+                width: '120px',
+                fontWeight: '600'
+              }}
+              title="Your total portfolio size for position sizing calculations (0.5% risk per trade)"
+            />
+          </div>
         </label>
 
         {/* Results Count */}
