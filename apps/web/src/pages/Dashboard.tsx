@@ -19,11 +19,17 @@ function Dashboard() {
     const saved = localStorage.getItem('portfolioSize')
     return saved ? Number(saved) : 10000 // Default $10,000
   })
+  
+  const [portfolioSaved, setPortfolioSaved] = useState(false)
 
-  // Save to localStorage when changed
+  // Save to localStorage when changed with visual feedback
   const handlePortfolioSizeChange = (value: number) => {
     setPortfolioSize(value)
     localStorage.setItem('portfolioSize', value.toString())
+    
+    // Show "Saved!" feedback
+    setPortfolioSaved(true)
+    setTimeout(() => setPortfolioSaved(false), 2000) // Hide after 2 seconds
   }
 
   const {
@@ -286,38 +292,61 @@ function Dashboard() {
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>Portfolio Size</span>
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <span style={{ 
-              position: 'absolute', 
-              left: '0.7rem', 
-              top: '50%', 
-              transform: 'translateY(-50%)',
-              color: 'var(--color-text-secondary)',
-              fontSize: '0.9rem',
-              pointerEvents: 'none'
-            }}>
-              $
-            </span>
-            <input
-              type="number"
-              min={1000}
-              max={10000000}
-              step={1000}
-              value={portfolioSize}
-              onChange={(e) => handlePortfolioSizeChange(Number(e.currentTarget.value) || 10000)}
-              style={{ 
-                padding: '0.5rem 0.7rem 0.5rem 1.5rem', 
-                borderRadius: 6, 
-                border: '1px solid var(--color-border)', 
-                background: 'var(--color-surface-elev)', 
-                color: 'var(--color-text-primary)',
+          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ 
+                position: 'absolute', 
+                left: '0.7rem', 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                color: 'var(--color-text-secondary)',
                 fontSize: '0.9rem',
-                width: '120px',
-                fontWeight: '600'
-              }}
-              title="Your total portfolio size for position sizing calculations (0.5% risk per trade)"
-            />
+                pointerEvents: 'none'
+              }}>
+                $
+              </span>
+              <input
+                type="number"
+                min={1000}
+                max={10000000}
+                step={1000}
+                value={portfolioSize}
+                onChange={(e) => handlePortfolioSizeChange(Number(e.currentTarget.value) || 10000)}
+                style={{ 
+                  padding: '0.5rem 0.7rem 0.5rem 1.5rem', 
+                  borderRadius: 6, 
+                  border: portfolioSaved ? '1px solid #10b981' : '1px solid var(--color-border)', 
+                  background: 'var(--color-surface-elev)', 
+                  color: 'var(--color-text-primary)',
+                  fontSize: '0.9rem',
+                  width: '120px',
+                  fontWeight: '600',
+                  transition: 'border-color 0.3s ease'
+                }}
+                title="Your total portfolio size for position sizing calculations (0.5% risk per trade)"
+              />
+            </div>
+            {portfolioSaved && (
+              <span style={{
+                color: '#10b981',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                animation: 'fadeIn 0.3s ease'
+              }}>
+                ✓ Saved
+              </span>
+            )}
           </div>
+          <span style={{ 
+            color: 'var(--color-text-muted)', 
+            fontSize: '0.8rem',
+            marginLeft: '-0.25rem'
+          }}>
+            (${(portfolioSize * 0.005).toFixed(2)} risk/trade)
+          </span>
         </label>
 
         {/* Results Count */}
