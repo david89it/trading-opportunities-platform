@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     API_HOST: str = Field(default="0.0.0.0", description="API host")
     API_PORT: int = Field(default=8000, description="API port")
     API_WORKERS: int = Field(default=1, description="Number of API workers")
-    DEBUG: bool = Field(default=True, description="Debug mode")
+    DEBUG: bool = Field(default=False, description="Debug mode")
     
     # CORS Configuration
     ALLOWED_HOSTS: List[str] = Field(

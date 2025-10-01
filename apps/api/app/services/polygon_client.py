@@ -507,37 +507,6 @@ class PolygonClient:
                 except Exception as e:
                     logger.warning(f"Failed to parse bar data: {e}")
 
-            # Fixture-friendly fallback: synthesize if not enough history
-            if not self.use_live and len(bars) < 50:
-                base = bars[-1].c if bars else (100.0 + (sum(ord(c) for c in ticker) % 50))
-                synthesized = []
-                # generate ~120 daily bars deterministically
-                for i in range(120):
-                    # smooth pseudo drift/noise
-                    drift = 0.0005 * i
-                    wave = math.sin(i * 0.15 + (sum(ord(c) for c in ticker) % 10)) * 0.01
-                    prev = synthesized[-1].c if synthesized else base
-                    close = max(1.0, prev * (1.0 + drift + wave))
-                    high = close * (1.0 + 0.01)
-                    low = close * (1.0 - 0.01)
-                    open_ = (prev + close) / 2
-                    vol = max(10000.0, abs(math.sin(i * 0.07)) * 5_000_000.0)
-                    item = {
-                        "o": open_,
-                        "h": high,
-                        "l": low,
-                        "c": close,
-                        "v": vol,
-                        "t": int((datetime.now() - timedelta(days=120 - i)).timestamp() * 1000),
-                        "n": 1000,
-                    }
-                    try:
-                        synthesized.append(AggregateBar(**item))
-                    except Exception:
-                        continue
-                bars = synthesized
-                logger.info(f"Synthesized {len(bars)} bars for {ticker} (fixture mode)")
-            
             logger.debug(f"Retrieved {len(bars)} bars for {ticker}")
             return bars
             
@@ -584,9 +553,8 @@ async def get_polygon_client() -> PolygonClient:
     
     if _polygon_client is None:
         from app.core.config import settings as _settings
-        # In DEBUG always force fixtures; otherwise respect USE_POLYGON_LIVE
-        force_live = (not _settings.DEBUG) and bool(_settings.USE_POLYGON_LIVE)
-        _polygon_client = PolygonClient(api_key=_settings.POLYGON_API_KEY, use_live=force_live)
+        # Use live data if USE_POLYGON_LIVE is enabled
+        _polygon_client = PolygonClient(api_key=_settings.POLYGON_API_KEY, use_live=_settings.USE_POLYGON_LIVE)
         await _polygon_client.__aenter__()
     else:
         # Unwrap MagicMock from tests if present
