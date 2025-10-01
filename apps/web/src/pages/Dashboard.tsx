@@ -11,9 +11,8 @@ import ErrorMessage from '../components/ErrorMessage'
 
 function Dashboard() {
   const queryClient = useQueryClient()
-  const [minScore, setMinScore] = useState<number | undefined>(undefined)
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
-  const [approvedOnly, setApprovedOnly] = useState<boolean>(false)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [riskFilter, setRiskFilter] = useState<string>('all')
 
   const {
     data: opportunities,
@@ -21,23 +20,38 @@ function Dashboard() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['opportunities', { minScore, statusFilter, approvedOnly }],
-    queryFn: () => fetchOpportunities({ min_score: minScore, status: approvedOnly ? 'approved' : statusFilter }),
+    queryKey: ['opportunities'],
+    queryFn: () => fetchOpportunities({}),
     refetchInterval: 30000, // Refetch every 30 seconds
   })
 
+  // Client-side filtering for better UX
+  const filteredOpportunities = opportunities?.opportunities.filter(opp => {
+    // Status filter
+    if (statusFilter !== 'all' && opp.guardrail_status !== statusFilter) return false
+    
+    // Risk filter (based on volatility)
+    if (riskFilter !== 'all') {
+      const volatility = opp.scores.volatility as number
+      if (riskFilter === 'low' && volatility >= 50) return false
+      if (riskFilter === 'medium' && (volatility < 30 || volatility >= 70)) return false
+      if (riskFilter === 'high' && volatility < 70) return false
+    }
+    
+    return true
+  }) || []
+
   const preview = useMutation({
-    mutationFn: () => api.scanPreview({ limit: 20, min_score: minScore ?? 60 }),
+    mutationFn: () => api.scanPreview({ limit: 20, min_score: 35 }),
     onSuccess: (data) => {
-      // Replace current opportunities with preview results
-      queryClient.setQueryData(['opportunities', { minScore, statusFilter, approvedOnly }], data)
+      queryClient.setQueryData(['opportunities'], data)
     },
   })
 
   const [listName, setListName] = useState<string>('')
   const [lastSavedName, setLastSavedName] = useState<string | undefined>('')
   const persist = useMutation({
-    mutationFn: () => api.persistOpportunities({ limit: 20, min_score: minScore ?? 60, name: listName || undefined }),
+    mutationFn: () => api.persistOpportunities({ limit: 20, min_score: 35, name: listName || undefined }),
     onSuccess: (res) => {
       if (res?.name) setLastSavedName(res.name)
     },
@@ -46,9 +60,57 @@ function Dashboard() {
   const loadRecent = useMutation({
     mutationFn: () => api.getRecentOpportunities({ limit: 50 }),
     onSuccess: (data) => {
-      queryClient.setQueryData(['opportunities', { minScore, statusFilter, approvedOnly }], data)
+      queryClient.setQueryData(['opportunities'], data)
     },
   })
+
+  // Utility: Export to CSV
+  const exportToCSV = () => {
+    const headers = ['Symbol', 'Score', 'Entry', 'Stop', 'Target 1', 'R:R', 'P(Target)', 'Net R', 'Position $', 'Shares', 'Status']
+    const rows = filteredOpportunities.map(opp => [
+      opp.symbol,
+      opp.signal_score.toFixed(1),
+      opp.setup.entry.toFixed(2),
+      opp.setup.stop.toFixed(2),
+      opp.setup.target1.toFixed(2),
+      `${opp.setup.rr_ratio.toFixed(1)}:1`,
+      `${(opp.risk.p_target * 100).toFixed(1)}%`,
+      `${opp.risk.net_expected_r > 0 ? '+' : ''}${opp.risk.net_expected_r.toFixed(3)}R`,
+      opp.setup.position_size_usd.toFixed(2),
+      opp.setup.position_size_shares,
+      opp.guardrail_status.toUpperCase()
+    ])
+    
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `alpha-scanner-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // Utility: Copy all trade setups
+  const copyAllSetups = () => {
+    const text = filteredOpportunities.map(opp => {
+      return [
+        `${opp.symbol} (Score: ${opp.signal_score.toFixed(1)})`,
+        `Entry: $${opp.setup.entry.toFixed(2)}`,
+        `Stop: $${opp.setup.stop.toFixed(2)}`,
+        `Target 1: $${opp.setup.target1.toFixed(2)}`,
+        `R:R: ${opp.setup.rr_ratio.toFixed(1)}:1`,
+        `Position: ${opp.setup.position_size_shares} shares ($${opp.setup.position_size_usd.toFixed(2)})`,
+        `P(Target): ${(opp.risk.p_target * 100).toFixed(1)}%`,
+        `Status: ${opp.guardrail_status.toUpperCase()}`,
+        ''
+      ].join('\n')
+    }).join('\n---\n\n')
+    
+    navigator.clipboard.writeText(text).then(() => {
+      alert('All trade setups copied to clipboard!')
+    })
+  }
 
   useEffect(() => {
     api.getLastSavedListName().then((r) => setLastSavedName(r.name || undefined)).catch(() => {})
@@ -128,7 +190,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filter & Actions Bar */}
       <div
         className="card"
         style={{
@@ -137,66 +199,102 @@ function Dashboard() {
           alignItems: 'center',
           marginBottom: '1rem',
           padding: '0.85rem 1.1rem',
-          backgroundColor: 'var(--color-surface) ',
+          backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
-          borderLeft: '3px solid #22314a'
+          borderLeft: '3px solid var(--color-primary)',
+          boxShadow: 'var(--elev-1)'
         }}
       >
+        {/* Filters */}
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Min Score</span>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={1}
-            value={minScore ?? ''}
-            onChange={(e) => setMinScore(e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value))}
-            placeholder="e.g. 60"
-            style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-primary)' }}
-          />
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Status</span>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>Status</span>
           <select
-            value={statusFilter ?? ''}
-            onChange={(e) => setStatusFilter(e.currentTarget.value === '' ? undefined : e.currentTarget.value)}
-            style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-primary)' }}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.currentTarget.value)}
+            style={{ 
+              padding: '0.5rem 0.7rem', 
+              borderRadius: 6, 
+              border: '1px solid var(--color-border)', 
+              background: 'var(--color-surface-elev)', 
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
           >
-            <option value="">All</option>
+            <option value="all">All</option>
             <option value="approved">Approved</option>
             <option value="review">Review</option>
             <option value="blocked">Blocked</option>
           </select>
         </label>
+
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <input
-            type="checkbox"
-            checked={approvedOnly}
-            onChange={(e) => setApprovedOnly(e.currentTarget.checked)}
-          />
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Approved only</span>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>Risk Level</span>
+          <select
+            value={riskFilter}
+            onChange={(e) => setRiskFilter(e.currentTarget.value)}
+            style={{ 
+              padding: '0.5rem 0.7rem', 
+              borderRadius: 6, 
+              border: '1px solid var(--color-border)', 
+              background: 'var(--color-surface-elev)', 
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+              fontSize: '0.9rem'
+            }}
+          >
+            <option value="all">All</option>
+            <option value="low">Low (Conservative)</option>
+            <option value="medium">Medium (Balanced)</option>
+            <option value="high">High (Aggressive)</option>
+          </select>
         </label>
-        <button className="btn btn--neutral" onClick={() => refetch()}>Apply</button>
-        {(minScore !== undefined || statusFilter || approvedOnly) && (
-          <button className="btn btn--outline" onClick={() => { setMinScore(undefined); setStatusFilter(undefined); setApprovedOnly(false); }}>Clear Filters</button>
-        )}
-        {(minScore !== undefined || statusFilter || approvedOnly) && (
-          <div style={{
-            marginLeft: 'auto',
-            padding: '0.35rem 0.6rem',
-            borderRadius: 9999,
-            backgroundColor: '#1f2937',
-            color: 'var(--color-text-secondary)',
-            fontSize: '0.8rem'
-          }}>
-            Active: {minScore !== undefined ? `min_score ≥ ${minScore}` : '—'}{statusFilter ? ` • status: ${statusFilter}` : ''}{approvedOnly ? ' • approved only' : ''}
-          </div>
-        )}
+
+        {/* Results Count */}
+        <div style={{
+          padding: '0.5rem 0.75rem',
+          borderRadius: 6,
+          backgroundColor: 'var(--color-surface-elev)',
+          border: '1px solid var(--color-border)',
+          fontSize: '0.9rem',
+          color: 'var(--color-text-primary)',
+          fontWeight: '600'
+        }}>
+          {filteredOpportunities.length} {filteredOpportunities.length !== opportunities?.total ? `of ${opportunities?.total || 0}` : ''} signals
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+          <button 
+            className="btn btn--primary" 
+            onClick={() => preview.mutate()} 
+            disabled={preview.isPending}
+            title="Run new scan for fresh signals"
+          >
+            {preview.isPending ? '🔄 Scanning...' : '🎯 Scan Now'}
+          </button>
+          <button 
+            className="btn btn--neutral" 
+            onClick={exportToCSV}
+            disabled={filteredOpportunities.length === 0}
+            title="Export filtered results to CSV"
+          >
+            📊 Export CSV
+          </button>
+          <button 
+            className="btn btn--outline" 
+            onClick={copyAllSetups}
+            disabled={filteredOpportunities.length === 0}
+            title="Copy all trade setups to clipboard"
+          >
+            📋 Copy All
+          </button>
+        </div>
       </div>
 
       {/* Opportunities Table */}
-      {opportunities && opportunities.opportunities.length > 0 ? (
-        <OpportunityTable opportunities={opportunities.opportunities} />
+      {filteredOpportunities.length > 0 ? (
+        <OpportunityTable opportunities={filteredOpportunities} />
       ) : (
         <div
           style={{
