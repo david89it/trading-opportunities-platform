@@ -3,7 +3,7 @@
  * Lightweight, accessible tooltip for explaining UI elements
  */
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 
 interface TooltipProps {
@@ -19,10 +19,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
   icon = false,
   position = 'top',
 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
   return (
-    <span className="tooltip-wrapper" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+    <span 
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => setIsVisible(true)}
+      onMouseLeave={() => setIsVisible(false)}
+    >
       {children || (icon && <HelpCircle size={14} style={{ color: 'var(--color-text-muted)', cursor: 'help' }} />)}
-      <span className={`tooltip-content tooltip-${position}`} style={{
+      <span style={{
         position: 'absolute',
         backgroundColor: 'rgba(0, 0, 0, 0.9)',
         color: 'white',
@@ -31,8 +37,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
         fontSize: '0.8rem',
         lineHeight: '1.4',
         whiteSpace: 'nowrap',
-        opacity: 0,
-        visibility: 'hidden',
+        opacity: isVisible ? 1 : 0,
+        visibility: isVisible ? 'visible' : 'hidden',
         transition: 'opacity 0.2s ease, visibility 0.2s ease',
         pointerEvents: 'none',
         zIndex: 1000,
@@ -95,12 +101,6 @@ export const Tooltip: React.FC<TooltipProps> = ({
           }),
         }} />
       </span>
-      <style>{`
-        .tooltip-wrapper:hover .tooltip-content {
-          opacity: 1;
-          visibility: visible;
-        }
-      `}</style>
     </span>
   );
 };
