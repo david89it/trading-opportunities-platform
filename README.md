@@ -123,19 +123,58 @@ pnpm dev:web       # Web only
 
 ## 📊 Features
 
-### Current (MVP)
-- **Signal Scanning**: Automated detection of asymmetric opportunities
-- **Risk Analysis**: Probability calculations and expected R calculations
-- **Mock Data**: Realistic synthetic trading data for development
-- **Web Dashboard**: Clean, responsive interface for opportunity analysis
-- **API Integration**: RESTful API with comprehensive documentation
+### ✅ Implemented (Production)
+- **Live Market Scanner**: Real-time opportunity detection using Polygon.io API
+- **Multi-Factor Signal Scoring**: Trend, momentum, volume, and volatility analysis
+- **Risk/Reward Optimization**: ATR-based stops with 3R and 5R targets
+- **Signal Tracking**: Log signal outcomes for calibration analysis
+- **Trade Journal**: Record and track actual trades with P&L
+- **User Authentication**: Supabase JWT auth with Row-Level Security
+- **Web Dashboard**: Clean, responsive interface with real-time data
+- **API Integration**: RESTful API with comprehensive Swagger documentation
 
-### Planned
-- **Live Data Integration**: Real-time market data via Polygon.io
-- **Position Sizing**: Intelligent position sizing based on risk parameters
-- **Performance Tracking**: Historical signal performance and calibration
+### 🔄 In Progress
+- **Calibration Visualization**: Scatter plots showing signal accuracy over time
+- **Performance Analytics**: Win rate, avg R, expectancy calculations
+- **Visa Design System**: Professional UI/UX with consistent branding
+
+### 📋 Planned
+- **Watchlist Management**: Custom symbol lists and scanning groups
 - **Alert System**: Configurable notifications for new opportunities
 - **Advanced Analytics**: Monte Carlo simulations and backtesting
+- **Portfolio Tracking**: Multi-position risk and heat management
+
+## 🎯 Scanner Strategy
+
+**For detailed technical documentation, see: [SCANNER_STRATEGY.md](./SCANNER_STRATEGY.md)**
+
+The Alpha Scanner uses a **multi-factor quantitative approach** to identify high-probability asymmetric opportunities:
+
+### Core Methodology
+1. **Trend Alignment (40% weight)**: EMA 20/50/200 crossovers and price positioning
+2. **Momentum Confirmation (30% weight)**: RSI-14 in optimal range (45-65)
+3. **Volume Surge Detection (20% weight)**: Relative volume (RVOL) > 1.5x average
+4. **Volatility Analysis (10% weight)**: ATR % between 2-6% for predictable risk
+
+### Signal Scoring (0-100 scale)
+- **35+ = Strong Signal**: Immediate consideration for entry
+- **60+ = High-Conviction**: Premium opportunity with multiple confirmations
+- **<35 = Filtered Out**: Does not meet minimum quality threshold
+
+### Risk Management (Per Trade)
+- **Entry**: Current market price (no limit orders)
+- **Stop Loss**: 1.5x ATR below entry (volatility-adjusted)
+- **Target 1**: 3R (3:1 reward/risk ratio)
+- **Target 2**: 5R (5:1 reward/risk ratio)
+- **Position Sizing**: 0.5% account risk per trade
+
+### Guardrails (Safety Filters)
+- **Liquidity**: Minimum $5M average daily dollar volume (ADDV)
+- **Spread**: Maximum 25 basis points bid/ask spread
+- **Net Expected R**: Must be positive after costs
+- **Price Range**: $5 - $500 per share (avoid penny stocks and expensive outliers)
+
+**See [SCANNER_STRATEGY.md](./SCANNER_STRATEGY.md) for complete implementation details and technical specifications.**
 
 ## 🔧 Development
 

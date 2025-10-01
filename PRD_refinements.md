@@ -19,6 +19,18 @@ This document refines the original PRD based on **actual evaluation findings** a
 4. **Supabase-Native**: Leverage Supabase fully (not just auth) for developer-friendly backend
 5. **Progressive Enhancement**: Each feature adds value independently
 
+### 📊 Core Scanner Strategy
+
+**For complete technical documentation of the signal scoring algorithm, see: [SCANNER_STRATEGY.md](./SCANNER_STRATEGY.md)**
+
+The scanner uses a multi-factor quantitative approach with:
+- **Trend Analysis**: EMA 20/50/200 alignment (40% weight)
+- **Momentum**: RSI-14 confirmation (30% weight)
+- **Volume**: Relative volume surge detection (20% weight)
+- **Volatility**: ATR-based risk assessment (10% weight)
+
+All implementation details, formulas, and code references are documented in the strategy guide.
+
 ---
 
 ## Current State Assessment
