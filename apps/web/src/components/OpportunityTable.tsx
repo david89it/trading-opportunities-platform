@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Opportunity } from '@alpha-scanner/shared'
+import { TooltipLabel } from './Tooltip'
 
 interface OpportunityTableProps {
   opportunities: Opportunity[]
@@ -100,31 +101,58 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
               Symbol
             </th>
             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
-              Signal Score
+              <TooltipLabel 
+                label="Signal Score" 
+                tooltip="Overall quality (0-100). Higher = stronger setup based on trend, momentum, volume & volatility"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
-              Sub-Scores
+              <TooltipLabel 
+                label="Sub-Scores" 
+                tooltip="Price: Trend alignment (EMA 20/50/200) • Volume: Surge vs average • Vol: Volatility (ATR %)"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-              Entry / Stop / Target
+              <TooltipLabel 
+                label="Entry / Stop / Target" 
+                tooltip="Current market price → Stop loss (1.5x ATR) → Target 1 (3R) → Target 2 (5R)"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-              R:R Ratio
+              <TooltipLabel 
+                label="R:R Ratio" 
+                tooltip="Risk/Reward ratio. How much you can make vs what you risk. Target is 3:1 or better"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-              P(Target)
+              <TooltipLabel 
+                label="P(Target)" 
+                tooltip="Probability of hitting target 1 before stop, based on signal quality (35+ score → ~50%)"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-              Net Exp. R
+              <TooltipLabel 
+                label="Net Exp. R" 
+                tooltip="Expected profit after costs. Positive = edge. Formula: (P(win) × 3R) - (P(loss) × 1R) - costs"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-              Position Size
+              <TooltipLabel 
+                label="Position Size" 
+                tooltip="Calculated for 0.5% account risk. Shows $ amount and # of shares to buy"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-              Micro
+              <TooltipLabel 
+                label="Micro" 
+                tooltip="Bid-ask spread (transaction cost) • ADDV (average daily dollar volume for liquidity)"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
-              Status
+              <TooltipLabel 
+                label="Status" 
+                tooltip="APPROVED: Passed all filters • REVIEW: Borderline metrics • BLOCKED: Failed guardrails"
+              />
             </th>
             <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--color-border)' }}>
               Actions
@@ -156,16 +184,16 @@ function OpportunityTable({ opportunities }: OpportunityTableProps) {
               </td>
               <td style={{ padding: '1rem' }}>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem' }}>Price</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} title="Trend alignment: EMA 20/50/200 positioning">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem', fontWeight: '500' }}>Price</span>
                     {getScoreBar(opportunity.scores.price as unknown as number, 100)}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem' }}>Volume</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} title="Relative volume: Current vs 20-day average">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem', fontWeight: '500' }}>Volume</span>
                     {getScoreBar(opportunity.scores.volume as unknown as number, 100)}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem' }}>Vol</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} title="Volatility: ATR % (2-6% is ideal)">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: '2.2rem', fontWeight: '500' }}>Vol</span>
                     {getScoreBar(opportunity.scores.volatility as unknown as number, 100)}
                   </div>
                 </div>
