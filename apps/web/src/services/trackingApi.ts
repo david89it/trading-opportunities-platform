@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios';
+import { getAuthHeader } from './supabaseClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -178,9 +179,11 @@ export interface CalibrationSummary {
 export const trackingApi = {
   // Create signal history
   createSignal: async (data: SignalHistoryCreate): Promise<SignalHistory> => {
+    const headers = await getAuthHeader();
     const response = await axios.post<SignalHistory>(
       `${API_BASE_URL}/api/v1/tracking/signals`,
-      data
+      data,
+      { headers }
     );
     return response.data;
   },
@@ -192,9 +195,10 @@ export const trackingApi = {
     limit?: number;
     offset?: number;
   }): Promise<SignalHistory[]> => {
+    const headers = await getAuthHeader();
     const response = await axios.get<SignalHistory[]>(
       `${API_BASE_URL}/api/v1/tracking/signals`,
-      { params }
+      { params, headers }
     );
     return response.data;
   },
@@ -204,9 +208,11 @@ export const trackingApi = {
     id: string,
     data: SignalHistoryUpdate
   ): Promise<SignalHistory> => {
+    const headers = await getAuthHeader();
     const response = await axios.patch<SignalHistory>(
       `${API_BASE_URL}/api/v1/tracking/signals/${id}`,
-      data
+      data,
+      { headers }
     );
     return response.data;
   },
@@ -217,9 +223,11 @@ export const trackingApi = {
 
   // Create trade
   createTrade: async (data: TradeCreate): Promise<Trade> => {
+    const headers = await getAuthHeader();
     const response = await axios.post<Trade>(
       `${API_BASE_URL}/api/v1/tracking/trades`,
-      data
+      data,
+      { headers }
     );
     return response.data;
   },
@@ -231,9 +239,10 @@ export const trackingApi = {
     limit?: number;
     offset?: number;
   }): Promise<Trade[]> => {
+    const headers = await getAuthHeader();
     const response = await axios.get<Trade[]>(
       `${API_BASE_URL}/api/v1/tracking/trades`,
-      { params }
+      { params, headers }
     );
     return response.data;
   },
@@ -243,18 +252,21 @@ export const trackingApi = {
     symbol?: string;
     days?: number;
   }): Promise<TradeStats> => {
+    const headers = await getAuthHeader();
     const response = await axios.get<TradeStats>(
       `${API_BASE_URL}/api/v1/tracking/trades/stats`,
-      { params }
+      { params, headers }
     );
     return response.data;
   },
 
   // Update trade
   updateTrade: async (id: string, data: Partial<TradeCreate>): Promise<Trade> => {
+    const headers = await getAuthHeader();
     const response = await axios.patch<Trade>(
       `${API_BASE_URL}/api/v1/tracking/trades/${id}`,
-      data
+      data,
+      { headers }
     );
     return response.data;
   },
@@ -267,9 +279,10 @@ export const trackingApi = {
   getCalibration: async (params?: {
     min_samples?: number;
   }): Promise<CalibrationSummary> => {
+    const headers = await getAuthHeader();
     const response = await axios.get<CalibrationSummary>(
       `${API_BASE_URL}/api/v1/tracking/calibration`,
-      { params }
+      { params, headers }
     );
     return response.data;
   },
