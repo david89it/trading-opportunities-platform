@@ -41,7 +41,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         visibility: isVisible ? 'visible' : 'hidden',
         transition: 'opacity 0.2s ease, visibility 0.2s ease',
         pointerEvents: 'none',
-        zIndex: 1000,
+        zIndex: 9999,
         ...(position === 'top' && {
           bottom: 'calc(100% + 8px)',
           left: '50%',
