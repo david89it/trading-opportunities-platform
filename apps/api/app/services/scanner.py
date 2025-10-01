@@ -945,7 +945,7 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 # Create opportunity object
                 opportunity_data = {
                     "id": str(uuid.uuid4()),
-                    "symbol": ticker,
+                    "symbol": symbol,
                     "timestamp": datetime.now(UTC),
                     "signal_score": signal_score,
                     "scores": scores,
@@ -976,7 +976,7 @@ async def scan_opportunities(limit: int = 50, min_score: float = 5.0) -> List[Op
                 opportunity = Opportunity(**opportunity_data)
                 opportunities.append(opportunity)
                 
-                logger.debug(f"Generated opportunity for {ticker}: score={signal_score:.2f}, net_r={net_r:.3f}")
+                logger.debug(f"Generated opportunity for {symbol}: score={signal_score:.2f}, net_r={net_r:.3f}")
                 
             except Exception as e:
                 logger.warning(f"Failed to analyze {symbol}: {e}")
